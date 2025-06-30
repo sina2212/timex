@@ -4,26 +4,17 @@ const { json } = require('body-parser');
 const crypto = require('crypto')
 const bcrypt = require('bcrypt');
 const { log } = require('console');
-
-const parseCookies = require(resolve('./libs/parseCookies'))
-const userSchema = require(resolve('./db/schema/general/user'))
+const parseCookies = require(resolve('./lib/parseCookies'))
+const userSchema = require(resolve('./db/schema/operations/users'))
 
 module.exports = function (app) {
-    app.get('/users', async (req, res) => {
-        try {
-            const persons = await userSchema.show_all(app);
-            return res.json({status: 'ok', persons: persons,});
-        } catch (err) { 
-            log(err)
-        }
-    });
-    app.post('/users', async (req, res) => {
+    app.post('/register', async (req, res) => {
         try{
             const fullName = req.body.full_name;
             const userName = req.body.username;
             const passwordText = req.body.password;
             const phoneNumber = req.body.phone_number;
-            if(fullName || !userName || !passwordText) {
+            if(!fullName || !userName || !passwordText) {
                 return res.json({status: 'error', error_code: 901, message: 'فیلد های مورد نظر را کامل کنید!'});
             }
             const password = await bcrypt.hash(passwordText, app.CC.Config.Security.HASH_DIFFICULTY);
@@ -36,11 +27,14 @@ module.exports = function (app) {
             }
             const exist_user = await userSchema.check_unique(app, userValues);
             if (exist_user.length > 0) {
-                return res.json({status: 'ok', message: 'کاربر وجود دارد'});
+                return res.json({status: 'error', message: 'کاربر وجود دارد'});
             }
             const new_user = await userSchema.save_new_user(app, userValues);
             if (new_user.length == 0 || new_user == false) {
                 return res.json({status: 'error', message: 'خطایی در هنگام ثبت کاربر رخ داده', id: -1});
+            }
+            else{
+                return res.json({status: 'ok', message: 'کاربر ایجاد شد، لاگین کنید'});
             }
             
         } catch(err) {
@@ -51,6 +45,51 @@ module.exports = function (app) {
                 log(err);
                 return res.json({status: 'error', error_code: err["code"], message: ""});
             }
+        }
+    });
+    app.post('/login', async (req, res) => {
+        try {
+            const username = req.body.username || undefined
+            const plainTextPassword = req.body.password || undefined
+            if (!username || !plainTextPassword) {
+                return res.json({status: 'error', error_code: 900, message: 'نام کاربری و رمز عبور را وارد کنید'})
+            }
+            user_values = {
+                username: username,
+                id: -1,
+                full_name: '',
+                phone_number: '',
+            }
+            // Find Users
+            const user = await userSchema.login(app, user_values);
+            if (user.length>0) {
+                // Find User information
+                user_values.id = user[0].id;
+                const userEntity = await userSchema.find_by_id(app, user_values);
+                const result = await bcrypt.compare(plainTextPassword, userEntity[0].password);
+                if (result == false) {
+                    return res.json({status: 'error', error_code: 901, message: 'رمزعبور نامعتبر است'});
+                }
+                if (result == true) {
+                    user_values.full_name = userEntity[0].full_name;
+                    user_values.phone_number = userEntity[0].phone_number;
+                    return res.json({status: 'ok', message: user_values});
+                }
+            }
+            else {
+                return res.json({status: 'error', error_code: 901, message: 'نام کاربری نامعتبر است!'});
+            }
+        } catch (err) {
+            log(err);
+            return res.json({status: 'error', error_code: err["code"], message: ""});
+        }
+    });
+    app.get('/users', async (req, res) => {
+        try {
+            const users = await userSchema.show_all(app);
+            return res.json({status: 'ok', users: users,});
+        } catch (err) { 
+            log(err)
         }
     });
     app.patch('/users', async(req, res)=>{

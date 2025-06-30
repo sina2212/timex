@@ -1,4 +1,3 @@
-const resolve = require('path').resolve;
 // GENERAL QUERY
 async function Query(app, query, value=undefined)
 {
