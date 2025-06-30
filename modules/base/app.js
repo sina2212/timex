@@ -21,7 +21,7 @@ module.exports = async function () {
     // }
     // Connect to DBs
     console.log("Connecting to db...")
-    const isDBConnected = await require(resolve('./db/db_connectors'))(app);
+    const isDBConnected = await require(resolve('./db/db_connector'))(app);
     if (!isDBConnected) {
         console.log("Cannot connect to db...")
         return

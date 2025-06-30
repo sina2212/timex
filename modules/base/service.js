@@ -3,7 +3,7 @@ const resolve = require('path').resolve;
 const bodyParser = require('body-parser');
 
 
-module.exports.runCOSTCENTER = async function () { 
+module.exports.runTimex = async function () { 
     // Initialized app
     app = await require(resolve('./modules/base/app'))();
     // Running Web Service

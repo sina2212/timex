@@ -1,3 +1,3 @@
 const resolve = require('path').resolve;
-const { runCOSTCENTER } = require(resolve('./modules/base/service'))
-runCOSTCENTER();
+const { runTimex } = require(resolve('./modules/base/service'))
+runTimex();
