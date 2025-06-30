@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const bcrypt = require('bcrypt');
 const { log } = require('console');
 const parseCookies = require(resolve('./lib/parseCookies'))
-const userSchema = require(resolve('./db/schema/operations/users'))
+const userSchema = require(resolve('./db/schema/general/users'))
 
 module.exports = function (app) {
     app.post('/register', async (req, res) => {

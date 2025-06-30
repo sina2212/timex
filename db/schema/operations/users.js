@@ -3,7 +3,7 @@ const query = require(resolve('./db/query'))
 
 module.exports.show_all = async function (app) {
     try {
-        const res = await query.Select(app, 'operations.users');
+        const res = await query.Select(app, 'general.users');
         return res.rows;
     } catch (error) {
         console.log(error);
@@ -13,7 +13,7 @@ module.exports.show_all = async function (app) {
 
 module.exports.check_unique = async function (app, values) {
     try {
-        const res = await query.Select(app, 'operations.users', ['username'], [values.username])
+        const res = await query.Select(app, 'general.users', ['username'], [values.username])
         return res.rows;
     } catch (error) {
         console.log(error);
@@ -23,7 +23,7 @@ module.exports.check_unique = async function (app, values) {
 
 module.exports.save_new_user = async function (app, values) {
     try {
-        const res = await query.Insert(app, 'operations.users',
+        const res = await query.Insert(app, 'general.users',
             ['full_name', 'username', 'password', 'phone_number'],
             [values.full_name, values.username, values.password, values.phone_number]
         );
@@ -36,7 +36,7 @@ module.exports.save_new_user = async function (app, values) {
 
 module.exports.change_information = async function (app, values) {
     try {
-        const res = await query.Update(app, 'operations.users',
+        const res = await query.Update(app, 'general.users',
             ['username', 'phone_number'], [values.username, values.phone_number],
             ['id'], [values.id]
         );
@@ -49,7 +49,7 @@ module.exports.change_information = async function (app, values) {
 
 module.exports.change_password = async function (app, values) {
     try {
-        const res = await query.Update(app, 'operations.users',
+        const res = await query.Update(app, 'general.users',
             ['password'], [values.password],
             ['id'], [values.id]
         );
@@ -62,7 +62,7 @@ module.exports.change_password = async function (app, values) {
 
 module.exports.login = async function (app, values) {
     try {
-        const res = await query.Select(app, 'operations.users',
+        const res = await query.Select(app, 'general.users',
             ['username'], [values.username]
         );
         return res.rows;
@@ -74,7 +74,7 @@ module.exports.login = async function (app, values) {
 
 module.exports.find_by_id = async function (app, values) {
     try {
-        const res = await query.Select(app, 'operations.users',
+        const res = await query.Select(app, 'general.users',
             ['id'], [values.id]
         );
         return res.rows;
