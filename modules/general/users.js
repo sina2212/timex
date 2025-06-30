@@ -10,10 +10,10 @@ const userSchema = require(resolve('./db/schema/general/users'))
 module.exports = function (app) {
     app.post('/register', async (req, res) => {
         try{
-            const fullName = req.body.full_name;
-            const userName = req.body.username;
-            const passwordText = req.body.password;
-            const phoneNumber = req.body.phone_number;
+            const fullName = req.body.full_name || undefined;
+            const userName = req.body.username || undefined;
+            const passwordText = req.body.password || undefined;
+            const phoneNumber = req.body.phone_number || undefined;
             if(!fullName || !userName || !passwordText) {
                 return res.json({status: 'error', error_code: 901, message: 'فیلد های مورد نظر را کامل کنید!'});
             }
