@@ -63,7 +63,6 @@ module.exports = function (app) {
             // Find Users
             const user = await userSchema.login(app, user_values);
             if (user.length>0) {
-                // Find User information
                 user_values.id = user[0].id;
                 const userEntity = await userSchema.find_by_id(app, user_values);
                 const result = await bcrypt.compare(plainTextPassword, userEntity[0].password);
@@ -73,7 +72,8 @@ module.exports = function (app) {
                 if (result == true) {
                     user_values.full_name = userEntity[0].full_name;
                     user_values.phone_number = userEntity[0].phone_number;
-                    return res.json({status: 'ok', message: user_values});
+                    const token = jwt.sign({user: user_values}, 'jwt secret', {expiresIn: '5m'});
+                    return res.json({status: 'ok', message: token});
                 }
             }
             else {
