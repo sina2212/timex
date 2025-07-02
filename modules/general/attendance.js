@@ -1,16 +1,12 @@
 const { resolve } = require('path');
-const jwt = require('jsonwebtoken');
-const { json } = require('body-parser');
-const crypto = require('crypto');
-const { log } = require('console');
-const parseCookies = require(resolve('./lib/parseCookies'));
 const userSchema = require(resolve('./db/schema/general/users'));
-const inOutSchema = require(resolve('./db/schema/general/attendance'));
+const auth = require(resolve('../base/aaa'));
+const inOutSchema = require(resolve('./db/schema/general/in_out'));
 
 module.exports = function (app) {
-    app.post('/in', /*token validation*/async (req, res) => {
+    app.post('/in', auth, async (req, res) => {
         try{
-            const userId = req.body.user_id || undefined;
+            const userId = req.user.id || undefined;
             const timeIn = req.body.time_in || undefined;
             const lat = req.body.lat || undefined;
             const lng = req.body.lng || undefined;
@@ -47,7 +43,7 @@ module.exports = function (app) {
         }
     });
 
-    app.post('/out', /*token validation*/async (req, res) => {
+    app.post('/out', auth,async (req, res) => {
         try{
             const lat = req.body.lat || undefined;
             const lng = req.body.lng || undefined;
