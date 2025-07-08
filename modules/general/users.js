@@ -1,13 +1,26 @@
 const { resolve } = require('path')
 const jwt = require('jsonwebtoken');
-const { json } = require('body-parser');
-const crypto = require('crypto')
 const bcrypt = require('bcrypt');
 const { log } = require('console');
-const parseCookies = require(resolve('./lib/parseCookies'))
-const userSchema = require(resolve('./db/schema/general/users'))
+const userSchema = require(resolve('./db/schema/general/users'));
+// const auth = require(resolve('./base/aaa'));
 
 module.exports = function (app) {
+    app.CC.Security = {};
+    app.CC.Security.Authenticating = async function (req, res, next) {
+        const token = req.headers.cookie.replace('token=', '');
+        if (!token) {
+            return res.status(401).json({error:"لطفا وارد شوید!"});
+        }
+        try {
+            const decode = jwt.verify(token, app.CC.Config.Security.WEB_ACCESS_TOKEN_SECRET);
+            // console.log(decode);
+            req.user = decode;
+            next();
+        } catch (error) {
+            return res.status(401).json({error:"توکن نامعتبر!"});
+        }
+    }
     app.post('/register', async (req, res) => {
         try{
             const fullName = req.body.full_name || undefined;
@@ -63,7 +76,6 @@ module.exports = function (app) {
             // Find Users
             const user = await userSchema.login(app, user_values);
             if (user.length>0) {
-                // Find User information
                 user_values.id = user[0].id;
                 const userEntity = await userSchema.find_by_id(app, user_values);
                 const result = await bcrypt.compare(plainTextPassword, userEntity[0].password);
@@ -73,7 +85,9 @@ module.exports = function (app) {
                 if (result == true) {
                     user_values.full_name = userEntity[0].full_name;
                     user_values.phone_number = userEntity[0].phone_number;
-                    return res.json({status: 'ok', message: user_values});
+                    const token = jwt.sign({user: user_values}, app.CC.Config.Security.WEB_ACCESS_TOKEN_SECRET, {expiresIn: '1h'});
+                    res.cookie("token", token);
+                    return res.json({status: 'ok', message: token});
                 }
             }
             else {
@@ -84,7 +98,7 @@ module.exports = function (app) {
             return res.json({status: 'error', error_code: err["code"], message: ""});
         }
     });
-    app.get('/users', async (req, res) => {
+    app.get('/users', app.CC.Security.Authenticating, async (req, res) => {
         try {
             const users = await userSchema.show_all(app);
             return res.json({status: 'ok', users: users,});
@@ -92,11 +106,12 @@ module.exports = function (app) {
             log(err)
         }
     });
-    app.patch('/users', async(req, res)=>{
+    app.patch('/users', app.CC.Security.Authenticating, async(req, res)=>{
         try {
-            const userId = req.body.id;
+            const userId = req.user.user.id || undefined;
             const userName = req.body.username;
             const phoneNumber = req.body.phone_number;
+            
             if (!phoneNumber || !userId || !userName) {
                 return res.json({status: 'error', error_code: 901, message: 'فیلد های مورد نظر را کامل کنید!'});
             }
@@ -113,14 +128,14 @@ module.exports = function (app) {
                 return res.json({status: 'OK', message:'ویرایش با نموفقیت انجام شد'});
             }
         } catch (error) {
-            log(err);
-            return res.json({status: 'error', error_code: err["code"], message: ""});
+            log(error);
+            return res.json({status: 'error', error_code: error["code"], message: ""});
         }
     });
-    app.put('/users', async(req, res)=>{
+    app.put('/users', app.CC.Security.Authenticating, async(req, res)=>{
         try {
             const passwordText = req.body.password;
-            const userId = req.body.id;
+            const userId = req.user.user.id;
             if (!passwordText || !userId) {
                 return res.json({status: 'error', error_code: 901, message: 'فیلد های مورد نظر را کامل کنید!'});
             }

@@ -1,16 +1,27 @@
 const { resolve } = require('path');
 const jwt = require('jsonwebtoken');
-const { json } = require('body-parser');
-const crypto = require('crypto');
-const { log } = require('console');
-const parseCookies = require(resolve('./lib/parseCookies'));
 const userSchema = require(resolve('./db/schema/general/users'));
-const inOutSchema = require(resolve('./db/schema/general/in_out'));
+const attendanceSchema = require(resolve('./db/schema/general/attendance'));
 
 module.exports = function (app) {
-    app.post('/in', /*token validation*/async (req, res) => {
+    app.CC.Security = {};
+    app.CC.Security.Authenticating = async function (req, res, next) {
+        const token = req.headers.cookie.replace('token=', '');
+        if (!token) {
+            return res.status(401).json({error:"لطفا وارد شوید!"});
+        }
+        try {
+            const decode = jwt.verify(token, app.CC.Config.Security.WEB_ACCESS_TOKEN_SECRET);
+            // console.log(decode);
+            req.user = decode;
+            next();
+        } catch (error) {
+            return res.status(401).json({error:"توکن نامعتبر!"});
+        }
+    }
+    app.post('/in', app.CC.Security.Authenticating, async (req, res) => {
         try{
-            const userId = req.body.user_id || undefined;
+            const userId = req.user.user.id || undefined;
             const timeIn = req.body.time_in || undefined;
             const lat = req.body.lat || undefined;
             const lng = req.body.lng || undefined;
@@ -28,7 +39,7 @@ module.exports = function (app) {
             if (exist_user.length = 0) {
                 return res.json({status: 'error', message: 'کاربر وجود ندارد'});
             }
-            const result = await inOutSchema.get_inside(app, hozorValues);
+            const result = await attendanceSchema.get_inside(app, hozorValues);
             if (result.length == 0 || result == false) {
                 return res.json({status: 'error', message: 'دوباره سعی کنید', id: -1});
             }
@@ -47,7 +58,7 @@ module.exports = function (app) {
         }
     });
 
-    app.post('/out', /*token validation*/async (req, res) => {
+    app.post('/out', app.CC.Security.Authenticating, async (req, res) => {
         try{
             const lat = req.body.lat || undefined;
             const lng = req.body.lng || undefined;
@@ -62,7 +73,7 @@ module.exports = function (app) {
                 id: outId,
                 time_out: timeOut,
             }
-            const result = await inOutSchema.get_outside(app, khorojValues);
+            const result = await attendanceSchema.get_outside(app, khorojValues);
             if (result.length == 0 || result == false) {
                 return res.json({status: 'error', message: 'دوباره سعی کنید', id: -1});
             }

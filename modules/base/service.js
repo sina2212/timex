@@ -1,7 +1,4 @@
-const express = require('express');
 const resolve = require('path').resolve;
-const bodyParser = require('body-parser');
-
 
 module.exports.runTimex = async function () { 
     // Initialized app
