@@ -673,10 +673,18 @@ class TimeXApp {
 
         this.showLoading();
         const result = await this.apiCall('/attendance', 'GET');
+        const usersResult = await this.apiCall('/users', 'GET');
         this.hideLoading();
 
         if (result && result.status === 'ok') {
-            this.displayAllAttendance(result.attendance);
+            const mainresult=result.attendance.map(record => {
+                const user = usersResult.users.find(u => u.id === record.user_id);
+                return {
+                    ...record,
+                    full_name: user ? user.full_name : 'نامشخص'
+                };
+            });
+            this.displayAllAttendance(mainresult);
         } else {
             this.showToast('خطا در بارگذاری اطلاعات حضور و غیاب', 'error');
         }
@@ -753,7 +761,7 @@ class TimeXApp {
             const duration = this.calculateDuration(timeIn, timeOut);
             
             recordDiv.innerHTML = `
-                <div class="user-info">کاربر ${record.user_id}</div>
+                <div class="user-info">${record.full_name}</div>
                 <div class="time-info">${timeIn ? timeIn.toLocaleDateString('fa-IR') : 'نامشخص'}</div>
                 <div class="time-info">${timeIn ? timeIn.toLocaleTimeString('fa-IR') : 'نامشخص'}</div>
                 <div class="time-info">${timeOut ? timeOut.toLocaleTimeString('fa-IR') : 'هنوز خروج نکرده'}</div>
