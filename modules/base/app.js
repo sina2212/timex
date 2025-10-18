@@ -10,6 +10,9 @@ module.exports = async function () {
     app.set('view engine', 'ejs');
     app.use(bodyParser.json() );
     app.use(bodyParser.urlencoded({ extended: true }));
+    
+    // Serve static files from public directory
+    app.use(express.static(resolve('./public')));
     // Loading configurations
     require(resolve('./modules/base/config'))(app);
     // Mail Server

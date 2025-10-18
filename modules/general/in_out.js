@@ -68,7 +68,7 @@ module.exports = function (app) {
             
             // Find user's active check-in record (without check-out time)
             const activeCheckIn = await inOutSchema.get_active_checkin(app, {user_id: userId});
-            if (!activeCheckIn || activeCheckIn.length === 0) {
+            if (activeCheckIn.length == 0) {
                 return res.json({status: 'error', message: 'شما چک‌این فعالی ندارید. ابتدا چک‌این کنید.'});
             }
             
@@ -100,6 +100,50 @@ module.exports = function (app) {
                 log(err);
                 return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});
             }
+        }
+    });
+
+    app.get('/attendance', auth, async (req, res) => {
+        try {
+            const userId = req.user.user.id;
+            const username = req.user.user.username;
+            
+            // Check if user is admin
+            if (username !== 'admin') {
+                return res.json({status: 'error', message: 'دسترسی محدود - فقط ادمین'});
+            }
+            
+            const result = await inOutSchema.show_all(app);
+            if (result === false) {
+                return res.json({status: 'error', message: 'خطا در دریافت اطلاعات حضور و غیاب'});
+            }
+            
+            return res.json({status: 'ok', attendance: result});
+            
+        } catch(err) {
+            log(err);
+            return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});
+        }
+    });
+
+    app.get('/my-attendance', auth, async (req, res) => {
+        try {
+            const userId = req.user.user.id;
+            
+            // Get user's own attendance records
+            const userSchema = require(resolve('./db/schema/general/users'));
+            const query = require(resolve('./db/query'));
+            
+            const result = await query.Select(app, 'general.attendance', ['user_id'], [userId]);
+            if (result === false) {
+                return res.json({status: 'error', message: 'خطا در دریافت اطلاعات حضور و غیاب'});
+            }
+            
+            return res.json({status: 'ok', attendance: result.rows});
+            
+        } catch(err) {
+            log(err);
+            return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});
         }
     });
 }

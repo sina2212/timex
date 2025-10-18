@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeX API Test Page</title>
+    <style>
+        body {
+            font-family: 'Tahoma', sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+            direction: rtl;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .endpoint {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .endpoint h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a6fd8;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .post { background: #28a745; }
+        .get { background: #007bff; }
+        .patch { background: #ffc107; color: #333; }
+        .put { background: #dc3545; }
+        .token-display {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TimeX API Test Page</h1>
+        <p>This page allows you to test all the backend endpoints directly.</p>
+        
+        <div id="token-section" class="token-display" style="display: none;">
+            <strong>Current Token:</strong>
+            <div id="current-token"></div>
+            <button onclick="clearToken()">Clear Token</button>
+        </div>
+
+        <!-- Register Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method post">POST</span>/register - User Registration</h3>
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Full Name:</label>
+                    <input type="text" name="full_name" placeholder="نام کامل" required>
+                </div>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username" placeholder="نام کاربری" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" name="password" placeholder="رمز عبور" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number:</label>
+                    <input type="tel" name="phone_number" placeholder="شماره تلفن">
+                </div>
+                <button type="submit">Register</button>
+            </form>
+            <div id="register-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Login Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method post">POST</span>/login - User Login</h3>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username" placeholder="نام کاربری" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" name="password" placeholder="رمز عبور" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <div id="login-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Check-in Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method post">POST</span>/in - Check In (Requires Auth)</h3>
+            <form id="checkin-form">
+                <div class="form-group">
+                    <label>Time In (ISO format):</label>
+                    <input type="text" name="time_in" id="time_in" placeholder="2024-01-01T09:00:00.000Z">
+                </div>
+                <div class="form-group">
+                    <label>Latitude:</label>
+                    <input type="number" step="any" name="lat" placeholder="35.6892">
+                </div>
+                <div class="form-group">
+                    <label>Longitude:</label>
+                    <input type="number" step="any" name="lng" placeholder="51.3890">
+                </div>
+                <button type="submit">Check In</button>
+                <button type="button" onclick="setCurrentTime('time_in')">Use Current Time</button>
+                <button type="button" onclick="getCurrentLocation('checkin')">Get Current Location</button>
+            </form>
+            <div id="checkin-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Check-out Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method post">POST</span>/out - Check Out (Requires Auth)</h3>
+            <form id="checkout-form">
+                <div class="form-group">
+                    <label>Time Out (ISO format):</label>
+                    <input type="text" name="time_out" id="time_out" placeholder="2024-01-01T17:00:00.000Z">
+                </div>
+                <div class="form-group">
+                    <label>Latitude:</label>
+                    <input type="number" step="any" name="lat" placeholder="35.6892">
+                </div>
+                <div class="form-group">
+                    <label>Longitude:</label>
+                    <input type="number" step="any" name="lng" placeholder="51.3890">
+                </div>
+                <button type="submit">Check Out</button>
+                <button type="button" onclick="setCurrentTime('time_out')">Use Current Time</button>
+                <button type="button" onclick="getCurrentLocation('checkout')">Get Current Location</button>
+            </form>
+            <div id="checkout-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Get Users Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method get">GET</span>/users - Get All Users (Requires Auth)</h3>
+            <button onclick="getUsers()">Get Users</button>
+            <div id="users-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Get My Attendance Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method get">GET</span>/my-attendance - Get My Attendance History (Requires Auth)</h3>
+            <button onclick="getMyAttendance()">Get My Attendance</button>
+            <div id="my-attendance-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Get All Attendance Endpoint (Admin Only) -->
+        <div class="endpoint">
+            <h3><span class="method get">GET</span>/attendance - Get All Attendance Records (Admin Only)</h3>
+            <button onclick="getAllAttendance()">Get All Attendance</button>
+            <div id="all-attendance-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Update Profile Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method patch">PATCH</span>/users - Update Profile (Requires Auth)</h3>
+            <form id="update-profile-form">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username" placeholder="نام کاربری جدید" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number:</label>
+                    <input type="tel" name="phone_number" placeholder="شماره تلفن جدید" required>
+                </div>
+                <button type="submit">Update Profile</button>
+            </form>
+            <div id="update-profile-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Change Password Endpoint -->
+        <div class="endpoint">
+            <h3><span class="method put">PUT</span>/users - Change Password (Requires Auth)</h3>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label>New Password:</label>
+                    <input type="password" name="password" placeholder="رمز عبور جدید" required>
+                </div>
+                <button type="submit">Change Password</button>
+            </form>
+            <div id="change-password-response" class="response" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000';
+        let currentToken = localStorage.getItem('timex_test_token');
+
+        // Update token display
+        function updateTokenDisplay() {
+            const tokenSection = document.getElementById('token-section');
+            const tokenDiv = document.getElementById('current-token');
+            
+            if (currentToken) {
+                tokenSection.style.display = 'block';
+                tokenDiv.textContent = currentToken;
+            } else {
+                tokenSection.style.display = 'none';
+            }
+        }
+
+        function clearToken() {
+            currentToken = null;
+            localStorage.removeItem('timex_test_token');
+            updateTokenDisplay();
+        }
+
+        function setCurrentTime(fieldId) {
+            const field = document.getElementById(fieldId);
+            field.value = new Date().toISOString();
+        }
+
+        function getCurrentLocation(form) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const formElement = document.getElementById(form + '-form');
+                    formElement.querySelector('input[name="lat"]').value = position.coords.latitude;
+                    formElement.querySelector('input[name="lng"]').value = position.coords.longitude;
+                    alert('Location updated!');
+                }, function(error) {
+                    alert('Error getting location: ' + error.message);
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+
+        async function makeRequest(endpoint, method = 'GET', data = null, needsAuth = false) {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            if (needsAuth && currentToken) {
+                options.headers['Authorization'] = `Bearer ${currentToken}`;
+            }
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(API_BASE_URL + endpoint, options);
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        function displayResponse(elementId, response) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = JSON.stringify(response, null, 2);
+        }
+
+        // Register form
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const response = await makeRequest('/register', 'POST', data);
+            displayResponse('register-response', response);
+        });
+
+        // Login form
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const response = await makeRequest('/login', 'POST', data);
+            displayResponse('login-response', response);
+            
+            if (response.status === 'ok') {
+                currentToken = response.message;
+                localStorage.setItem('timex_test_token', currentToken);
+                updateTokenDisplay();
+            }
+        });
+
+        // Check-in form
+        document.getElementById('checkin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const response = await makeRequest('/in', 'POST', data, true);
+            displayResponse('checkin-response', response);
+        });
+
+        // Check-out form
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const response = await makeRequest('/out', 'POST', data, true);
+            displayResponse('checkout-response', response);
+        });
+
+        // Get users
+        async function getUsers() {
+            const response = await makeRequest('/users', 'GET', null, true);
+            displayResponse('users-response', response);
+        }
+
+        // Get my attendance
+        async function getMyAttendance() {
+            const response = await makeRequest('/my-attendance', 'GET', null, true);
+            displayResponse('my-attendance-response', response);
+        }
+
+        // Get all attendance (admin only)
+        async function getAllAttendance() {
+            const response = await makeRequest('/attendance', 'GET', null, true);
+            displayResponse('all-attendance-response', response);
+        }
+
+        // Update profile form
+        document.getElementById('update-profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const response = await makeRequest('/users', 'PATCH', data, true);
+            displayResponse('update-profile-response', response);
+        });
+
+        // Change password form
+        document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const response = await makeRequest('/users', 'PUT', data, true);
+            displayResponse('change-password-response', response);
+        });
+
+        // Initialize
+        updateTokenDisplay();
+    </script>
+</body>
+</html>
