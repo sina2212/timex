@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const { log } = require('console');
 const parseCookies = require(resolve('./lib/parseCookies'))
 const userSchema = require(resolve('./db/schema/general/users'))
+const auth = require(resolve('./modules/base/aaa'))
 
 module.exports = function (app) {
     app.post('/register', async (req, res) => {
@@ -84,7 +85,7 @@ module.exports = function (app) {
             return res.json({status: 'error', error_code: err["code"], message: ""});
         }
     });
-    app.get('/users', async (req, res) => {
+    app.get('/users', auth, async (req, res) => {
         try {
             const users = await userSchema.show_all(app);
             return res.json({status: 'ok', users: users,});
@@ -92,12 +93,12 @@ module.exports = function (app) {
             log(err)
         }
     });
-    app.patch('/users', async(req, res)=>{
+    app.patch('/users', auth, async(req, res)=>{
         try {
-            const userId = req.body.id;
+            const userId = req.user.user.id; // Extract userId from JWT token
             const userName = req.body.username;
             const phoneNumber = req.body.phone_number;
-            if (!phoneNumber || !userId || !userName) {
+            if (!phoneNumber || !userName) {
                 return res.json({status: 'error', error_code: 901, message: 'فیلد های مورد نظر را کامل کنید!'});
             }
             const infoValues ={
@@ -113,15 +114,15 @@ module.exports = function (app) {
                 return res.json({status: 'OK', message:'ویرایش با نموفقیت انجام شد'});
             }
         } catch (error) {
-            log(err);
-            return res.json({status: 'error', error_code: err["code"], message: ""});
+            log(error);
+            return res.json({status: 'error', error_code: error["code"], message: ""});
         }
     });
-    app.put('/users', async(req, res)=>{
+    app.put('/users', auth, async(req, res)=>{
         try {
             const passwordText = req.body.password;
-            const userId = req.body.id;
-            if (!passwordText || !userId) {
+            const userId = req.user.user.id; // Extract userId from JWT token
+            if (!passwordText) {
                 return res.json({status: 'error', error_code: 901, message: 'فیلد های مورد نظر را کامل کنید!'});
             }
             const password = await bcrypt.hash(passwordText, app.CC.Config.Security.HASH_DIFFICULTY);
@@ -134,11 +135,11 @@ module.exports = function (app) {
                 return res.json({status: 'error', message: 'خطایی در هنگام ثبت کاربر رخ داده', id: -1});
             }
             else{
-                return res.json({status: 'OK', message:'ویرایش با نموفقیت انجام شد'});
+                return res.json({status: 'OK', message:'ویرایش با موفقیت انجام شد'});
             }
         } catch (error) {
-            log(err);
-            return res.json({status: 'error', error_code: err["code"], message: ""});
+            log(error);
+            return res.json({status: 'error', error_code: error["code"], message: ""});
         }
     });
 }

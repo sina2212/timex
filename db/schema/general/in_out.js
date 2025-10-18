@@ -39,3 +39,15 @@ module.exports.get_outside = async function (app, values) {
         return false;
     }
 }
+
+module.exports.get_active_checkin = async function (app, values) {
+    try {
+        const res = await query.Select(app, 'general.in_out',
+            ['user_id', 'time_out'], [values.user_id, null]
+        );
+        return res.rows;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+}
