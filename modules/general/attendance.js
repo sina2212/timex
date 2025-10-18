@@ -5,7 +5,22 @@ const auth = require(resolve('./modules/base/aaa'));
 const inOutSchema = require(resolve('./db/schema/general/in_out'));
 
 module.exports = function (app) {
-    app.post('/in', auth, async (req, res) => {
+    app.CC.Security = {};
+    app.CC.Security.Authenticating = async function (req, res, next) {
+        const token = req.headers.cookie.replace('token=', '');
+        if (!token) {
+            return res.status(401).json({error:"لطفا وارد شوید!"});
+        }
+        try {
+            const decode = jwt.verify(token, app.CC.Config.Security.WEB_ACCESS_TOKEN_SECRET);
+            // console.log(decode);
+            req.user = decode;
+            next();
+        } catch (error) {
+            return res.status(401).json({error:"توکن نامعتبر!"});
+        }
+    }
+    app.post('/in', app.CC.Security.Authenticating, async (req, res) => {
         try{
             const userId = req.user.user.id; // Fixed: Get userId from JWT token correctly
             const timeIn = req.body.time_in || undefined;

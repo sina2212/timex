@@ -1,7 +1,5 @@
 const { resolve } = require('path')
 const jwt = require('jsonwebtoken');
-const { json } = require('body-parser');
-const crypto = require('crypto')
 const bcrypt = require('bcrypt');
 const { log } = require('console');
 const parseCookies = require(resolve('./lib/parseCookies'))
@@ -9,6 +7,21 @@ const userSchema = require(resolve('./db/schema/general/users'))
 const auth = require(resolve('./modules/base/aaa'))
 
 module.exports = function (app) {
+    app.CC.Security = {};
+    app.CC.Security.Authenticating = async function (req, res, next) {
+        const token = req.headers.cookie.replace('token=', '');
+        if (!token) {
+            return res.status(401).json({error:"لطفا وارد شوید!"});
+        }
+        try {
+            const decode = jwt.verify(token, app.CC.Config.Security.WEB_ACCESS_TOKEN_SECRET);
+            // console.log(decode);
+            req.user = decode;
+            next();
+        } catch (error) {
+            return res.status(401).json({error:"توکن نامعتبر!"});
+        }
+    }
     app.post('/register', async (req, res) => {
         try{
             const fullName = req.body.full_name || undefined;
@@ -73,7 +86,8 @@ module.exports = function (app) {
                 if (result == true) {
                     user_values.full_name = userEntity[0].full_name;
                     user_values.phone_number = userEntity[0].phone_number;
-                    const token = jwt.sign({user: user_values}, 'jwt secret', {expiresIn: '5m'});
+                    const token = jwt.sign({user: user_values}, app.CC.Config.Security.WEB_ACCESS_TOKEN_SECRET, {expiresIn: '1h'});
+                    res.cookie("token", token);
                     return res.json({status: 'ok', message: token});
                 }
             }
