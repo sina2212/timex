@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم مدیریت زمان - TimeX</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazir:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Loading Spinner -->
+        <div id="loading-spinner" class="loading-spinner hidden">
+            <div class="spinner"></div>
+            <p>در حال بارگذاری...</p>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="auth-section" class="auth-section">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1><i class="fas fa-clock"></i> TimeX</h1>
+                    <p>سیستم مدیریت زمان و حضور و غیاب</p>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form" class="auth-form">
+                    <h2>ورود به سیستم</h2>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="login-username">نام کاربری</label>
+                            <input type="text" id="login-username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">رمز عبور</label>
+                            <input type="password" id="login-password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> ورود
+                        </button>
+                    </form>
+                    <p class="auth-switch">
+                        حساب کاربری ندارید؟ 
+                        <a href="#" id="show-register">ثبت نام کنید</a>
+                    </p>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="auth-form hidden">
+                    <h2>ثبت نام</h2>
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label for="register-fullname">نام کامل</label>
+                            <input type="text" id="register-fullname" name="full_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-username">نام کاربری</label>
+                            <input type="text" id="register-username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">رمز عبور</label>
+                            <input type="password" id="register-password" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-phone">شماره تلفن</label>
+                            <input type="tel" id="register-phone" name="phone_number">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> ثبت نام
+                        </button>
+                    </form>
+                    <p class="auth-switch">
+                        قبلاً ثبت نام کرده‌اید؟ 
+                        <a href="#" id="show-login">وارد شوید</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div id="dashboard" class="dashboard hidden">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1><i class="fas fa-clock"></i> TimeX</h1>
+                        <span id="current-time" class="current-time"></span>
+                    </div>
+                    <div class="header-right">
+                        <span id="user-name" class="user-name"></span>
+                        <button id="logout-btn" class="btn btn-outline">
+                            <i class="fas fa-sign-out-alt"></i> خروج
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigation -->
+            <nav class="dashboard-nav">
+                <ul>
+                    <li><a href="#" data-tab="attendance" class="nav-link active">
+                        <i class="fas fa-clock"></i> حضور و غیاب
+                    </a></li>
+                    <li><a href="#" data-tab="profile" class="nav-link">
+                        <i class="fas fa-user"></i> پروفایل
+                    </a></li>
+                    <li><a href="#" data-tab="users" class="nav-link">
+                        <i class="fas fa-users"></i> کاربران
+                    </a></li>
+                </ul>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="dashboard-main">
+                <!-- Attendance Tab -->
+                <div id="attendance-tab" class="tab-content active">
+                    <div class="attendance-section">
+                        <div class="attendance-status">
+                            <div id="status-card" class="status-card">
+                                <div class="status-info">
+                                    <h3 id="status-title">وضعیت حضور</h3>
+                                    <p id="status-description">آماده برای ثبت ورود</p>
+                                    <div id="current-session" class="current-session hidden">
+                                        <p><strong>زمان ورود:</strong> <span id="checkin-time"></span></p>
+                                        <p><strong>مدت حضور:</strong> <span id="duration"></span></p>
+                                    </div>
+                                </div>
+                                <div class="status-actions">
+                                    <button id="checkin-btn" class="btn btn-success hidden">
+                                        <i class="fas fa-sign-in-alt"></i> ثبت ورود
+                                    </button>
+                                    <button id="checkout-btn" class="btn btn-danger hidden">
+                                        <i class="fas fa-sign-out-alt"></i> ثبت خروج
+                                    </button>
+                                    <button id="get-location-btn" class="btn btn-outline">
+                                        <i class="fas fa-location-arrow"></i> دریافت موقعیت
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Tab -->
+                <div id="profile-tab" class="tab-content">
+                    <div class="profile-section">
+                        <div class="profile-card">
+                            <h3><i class="fas fa-user-edit"></i> ویرایش اطلاعات شخصی</h3>
+                            <form id="profile-form">
+                                <div class="form-group">
+                                    <label for="profile-username">نام کاربری</label>
+                                    <input type="text" id="profile-username" name="username" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-phone">شماره تلفن</label>
+                                    <input type="tel" id="profile-phone" name="phone_number" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> ذخیره تغییرات
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="password-card">
+                            <h3><i class="fas fa-key"></i> تغییر رمز عبور</h3>
+                            <form id="password-form">
+                                <div class="form-group">
+                                    <label for="new-password">رمز عبور جدید</label>
+                                    <input type="password" id="new-password" name="password" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm-password">تأیید رمز عبور</label>
+                                    <input type="password" id="confirm-password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-key"></i> تغییر رمز عبور
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Attendance History Section -->
+                    <div class="attendance-history-section">
+                        <div class="attendance-history-card">
+                            <div class="attendance-header">
+                                <h3><i class="fas fa-history"></i> سابقه حضور و غیاب</h3>
+                                <button id="refresh-attendance-btn" class="btn btn-outline">
+                                    <i class="fas fa-sync-alt"></i> بروزرسانی
+                                </button>
+                            </div>
+                            <div class="attendance-filter">
+                                <div class="filter-group">
+                                    <label for="date-from">از تاریخ:</label>
+                                    <input type="date" id="date-from" class="filter-input">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="date-to">تا تاریخ:</label>
+                                    <input type="date" id="date-to" class="filter-input">
+                                </div>
+                                <button id="filter-attendance-btn" class="btn btn-outline">
+                                    <i class="fas fa-filter"></i> اعمال فیلتر
+                                </button>
+                            </div>
+                            <div id="my-attendance-container" class="attendance-container">
+                                <!-- User's attendance records will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Tab -->
+                <div id="users-tab" class="tab-content">
+                    <div class="users-section">
+                        <div class="users-header">
+                            <h3><i class="fas fa-users"></i> مدیریت کاربران و حضور و غیاب</h3>
+                            <div class="header-buttons">
+                                <button id="refresh-users-btn" class="btn btn-outline">
+                                    <i class="fas fa-sync-alt"></i> بروزرسانی کاربران
+                                </button>
+                                <button id="refresh-all-attendance-btn" class="btn btn-outline">
+                                    <i class="fas fa-history"></i> بروزرسانی حضور و غیاب
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Users List -->
+                        <div class="admin-section">
+                            <h4><i class="fas fa-user-friends"></i> لیست کاربران</h4>
+                            <div class="users-list">
+                                <div id="users-container" class="users-container">
+                                    <!-- Users will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- All Attendance Records -->
+                        <div class="admin-section">
+                            <h4><i class="fas fa-clock"></i> سابقه حضور و غیاب همه کاربران</h4>
+                            <div class="attendance-filter">
+                                <div class="filter-group">
+                                    <label for="admin-date-from">از تاریخ:</label>
+                                    <input type="date" id="admin-date-from" class="filter-input">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="admin-date-to">تا تاریخ:</label>
+                                    <input type="date" id="admin-date-to" class="filter-input">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="user-filter">کاربر:</label>
+                                    <select id="user-filter" class="filter-input">
+                                        <option value="">همه کاربران</option>
+                                    </select>
+                                </div>
+                                <button id="filter-all-attendance-btn" class="btn btn-outline">
+                                    <i class="fas fa-filter"></i> اعمال فیلتر
+                                </button>
+                            </div>
+                            <div id="all-attendance-container" class="attendance-container">
+                                <!-- All attendance records will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
