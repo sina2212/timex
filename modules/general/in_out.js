@@ -105,7 +105,6 @@ module.exports = function (app) {
 
     app.get('/attendance', auth, async (req, res) => {
         try {
-            const userId = req.user.user.id;
             const username = req.user.user.username;
             
             // Check if user is admin

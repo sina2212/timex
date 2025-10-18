@@ -5,5 +5,5 @@ module.exports = function(app)
     // require(resolve('./modules/base/aaa'))(app);
     require(resolve('./modules/base/static'))(app);
     require(resolve('./modules/general/users'))(app);
-    require(resolve('./modules/general/attendance'))(app);
+    require(resolve('./modules/general/in_out'))(app);
 }
