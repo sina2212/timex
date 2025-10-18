@@ -121,21 +121,49 @@
                                 <div class="status-info">
                                     <h3 id="status-title">وضعیت حضور</h3>
                                     <p id="status-description">آماده برای ثبت ورود</p>
+                                    <!-- <div id="current-moment-time" class="moment-time">
+                                        <p><strong>زمان فعلی:</strong> <span id="live-time"></span></p>
+                                    </div> -->
                                     <div id="current-session" class="current-session hidden">
                                         <p><strong>زمان ورود:</strong> <span id="checkin-time"></span></p>
                                         <p><strong>مدت حضور:</strong> <span id="duration"></span></p>
                                     </div>
                                 </div>
                                 <div class="status-actions">
-                                    <button id="checkin-btn" class="btn btn-success hidden">
-                                        <i class="fas fa-sign-in-alt"></i> ثبت ورود
-                                    </button>
-                                    <button id="checkout-btn" class="btn btn-danger hidden">
-                                        <i class="fas fa-sign-out-alt"></i> ثبت خروج
-                                    </button>
-                                    <button id="get-location-btn" class="btn btn-outline">
-                                        <i class="fas fa-location-arrow"></i> دریافت موقعیت
-                                    </button>
+                                    <!-- Check-in Section -->
+                                    <div id="checkin-section" class="action-section hidden">
+                                        <div class="time-picker-group">
+                                            <label for="checkin-time-input">زمان ورود:</label>
+                                            <input type="time" id="checkin-time-input" class="time-input">
+                                            <button id="use-current-time-in" class="btn btn-sm btn-outline">
+                                                <i class="fas fa-clock"></i> زمان فعلی
+                                            </button>
+                                        </div>
+                                        <button id="checkin-btn" class="btn btn-success">
+                                            <i class="fas fa-sign-in-alt"></i> ثبت ورود
+                                        </button>
+                                    </div>
+
+                                    <!-- Check-out Section -->
+                                    <div id="checkout-section" class="action-section hidden">
+                                        <div class="time-picker-group">
+                                            <label for="checkout-time-input">زمان خروج:</label>
+                                            <input type="time" id="checkout-time-input" class="time-input">
+                                            <button id="use-current-time-out" class="btn btn-sm btn-outline">
+                                                <i class="fas fa-clock"></i> زمان فعلی
+                                            </button>
+                                        </div>
+                                        <button id="checkout-btn" class="btn btn-danger">
+                                            <i class="fas fa-sign-out-alt"></i> ثبت خروج
+                                        </button>
+                                    </div>
+
+                                    <!-- Common Actions -->
+                                    <div class="common-actions">
+                                        <!-- <button id="get-location-btn" class="btn btn-outline">
+                                            <i class="fas fa-location-arrow"></i> دریافت موقعیت
+                                        </button> -->
+                                    </div>
                                 </div>
                             </div>
                         </div>

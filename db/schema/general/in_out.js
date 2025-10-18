@@ -50,3 +50,13 @@ module.exports.get_active_checkin = async function (app, values) {
         return false;
     }
 }
+
+module.exports.delete_time = async function (app, values) {
+    try {
+        const res = await query.Delete(app, 'general.attendance', ['id'], [values.id]);
+        return res.rows;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+}

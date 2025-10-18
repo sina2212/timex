@@ -45,19 +45,48 @@ body {
     color: white;
 }
 
+/* Loading spinner */
 .spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #667eea;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4A90E2;
     border-radius: 50%;
+    width: 20px;
+    height: 20px;
     animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
+    display: inline-block;
+    margin-right: 10px;
 }
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+.btn-delete i {
+    pointer-events: none;
 }
 
 /* Authentication Styles */
@@ -395,7 +424,77 @@ body {
 .status-actions {
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
+}
+
+.action-section {
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
+    padding: 1rem;
+    border-radius: 10px;
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+}
+
+.time-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.time-picker-group label {
+    font-weight: 500;
+    color: #555;
+    min-width: 80px;
+}
+
+.time-input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    min-width: 120px;
+    background: white;
+}
+
+.time-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.moment-time {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    margin: 1rem 0;
+    text-align: center;
+    font-weight: 500;
+}
+
+.moment-time p {
+    margin: 0;
+}
+
+#live-time {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.common-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    flex-wrap: wrap;
 }
 
 .status-actions button {
@@ -413,6 +512,22 @@ body {
     border-color: #138496;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(23, 162, 184, 0.3);
+}
+
+@media (max-width: 768px) {
+    .time-picker-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .time-picker-group label {
+        min-width: auto;
+        text-align: center;
+    }
+    
+    .time-input {
+        min-width: auto;
+    }
 }
 
 /* Location Section */
@@ -508,20 +623,28 @@ body {
     font-size: 0.9rem;
 }
 
+.attendance-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #e1e5e9;
+}
+
 .attendance-container {
     max-height: 400px;
     overflow-y: auto;
-    border: 1px solid #e1e5e9;
-    border-radius: 10px;
+    border: none;
+    border-radius: 0;
+    min-width: 800px;
 }
 
 .attendance-record {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 0.8fr;
     gap: 1rem;
     padding: 1rem;
     border-bottom: 1px solid #f0f0f0;
     align-items: center;
+    min-width: 780px;
 }
 
 .attendance-record:last-child {
@@ -567,7 +690,7 @@ body {
 
 .attendance-header-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 0.8fr;
     gap: 1rem;
     padding: 1rem;
     background: #667eea;
@@ -575,6 +698,7 @@ body {
     font-weight: 500;
     border-radius: 10px 10px 0 0;
     margin: 0;
+    min-width: 780px;
 }
 
 @media (max-width: 768px) {
@@ -587,15 +711,25 @@ body {
         align-items: stretch;
     }
     
+    .attendance-container {
+        min-width: auto;
+        overflow-x: auto;
+    }
+    
     .attendance-record,
     .attendance-header-row {
         grid-template-columns: 1fr;
         gap: 0.5rem;
+        min-width: auto;
     }
     
     .attendance-record {
         text-align: center;
         padding: 1.5rem 1rem;
+    }
+    
+    .attendance-header-row {
+        text-align: center;
     }
 }
 

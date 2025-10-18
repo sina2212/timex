@@ -3,6 +3,7 @@ const { log } = require('console');
 const userSchema = require(resolve('./db/schema/general/users'));
 const auth = require(resolve('./modules/base/aaa'));
 const inOutSchema = require(resolve('./db/schema/general/in_out'));
+const query = require(resolve('./db/query'));
 
 module.exports = function (app) {
     app.post('/in', auth, async (req, res) => {
@@ -129,10 +130,6 @@ module.exports = function (app) {
         try {
             const userId = req.user.user.id;
             
-            // Get user's own attendance records
-            const userSchema = require(resolve('./db/schema/general/users'));
-            const query = require(resolve('./db/query'));
-            
             const result = await query.Select(app, 'general.attendance', ['user_id'], [userId]);
             if (result === false) {
                 return res.json({status: 'error', message: 'خطا در دریافت اطلاعات حضور و غیاب'});
@@ -140,6 +137,47 @@ module.exports = function (app) {
             
             return res.json({status: 'ok', attendance: result.rows});
             
+        } catch(err) {
+            log(err);
+            return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});
+        }
+    });
+
+    app.delete('/attendance/:id', auth, async (req, res) => {
+        try {
+            const attendanceId = req.params.id;
+            const userId = req.user.user.id;
+            const username = req.user.user.username;
+            
+            if (!attendanceId) {
+                return res.json({status: 'error', message: 'شناسه حضور و غیاب الزامی است'});
+            }
+            
+            // Check if the record exists and belongs to the user (or user is admin)
+            const existingRecord = await query.Select(app, 'general.attendance', ['id'], [attendanceId]);
+            if (!existingRecord || existingRecord.rows.length === 0) {
+                return res.json({status: 'error', message: 'رکورد حضور و غیاب یافت نشد'});
+            }
+
+            const record = existingRecord.rows[0];
+            
+            if (username !== 'admin' && record.user_id !== userId) {
+                return res.json({status: 'error', message: 'شما مجاز به حذف این رکورد نیستید'});
+            }
+
+            // Delete the attendance record
+            const result = await query.Delete(app, 'general.attendance', ['id'], [attendanceId]);
+            
+            if (result === false || result.rowCount === 0) {
+                return res.json({status: 'error', message: 'خطا در حذف رکورد حضور و غیاب'});
+            }
+
+            return res.json({
+                status: 'ok', 
+                message: 'رکورد حضور و غیاب با موفقیت حذف شد',
+                deleted_id: attendanceId
+            });
+
         } catch(err) {
             log(err);
             return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});

@@ -77,6 +77,18 @@ class TimeXApp {
             this.getCurrentLocation();
         });
 
+        // Time picker helpers
+        document.getElementById('use-current-time-in').addEventListener('click', () => {
+            this.setCurrentTimeToInput('checkin-time-input');
+        });
+
+        document.getElementById('use-current-time-out').addEventListener('click', () => {
+            this.setCurrentTimeToInput('checkout-time-input');
+        });
+
+        // Initialize time inputs with current time
+        this.initializeTimeInputs();
+
         // Profile forms
         document.getElementById('profile-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -110,6 +122,42 @@ class TimeXApp {
         document.getElementById('filter-all-attendance-btn').addEventListener('click', () => {
             this.filterAllAttendance();
         });
+
+        // Event delegation for delete buttons - bind to the instance
+        this.setupDeleteButtonListeners();
+    }
+
+    setupDeleteButtonListeners() {
+        // Remove any existing listeners first
+        if (this.deleteButtonListener) {
+            document.removeEventListener('click', this.deleteButtonListener);
+        }
+        
+        // Create bound listener
+        this.deleteButtonListener = (e) => {
+            // Check if clicked element is a delete button or inside one
+            const deleteButton = e.target.closest('.btn-delete');
+            if (deleteButton) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Delete button clicked!', deleteButton); // Debug log
+                
+                const recordId = deleteButton.getAttribute('data-record-id');
+                console.log('Record ID:', recordId); // Debug log
+                
+                if (recordId) {
+                    console.log('Calling deleteAttendanceRecord with ID:', recordId); // Debug log
+                    this.deleteAttendanceRecord(recordId);
+                } else {
+                    console.log('No record ID found on button'); // Debug log
+                }
+            }
+        };
+        
+        // Add the listener
+        document.addEventListener('click', this.deleteButtonListener);
+        console.log('Delete button listener setup complete'); // Debug log
     }
 
     // Utility Methods
@@ -171,6 +219,43 @@ class TimeXApp {
         if (timeElement) {
             timeElement.textContent = timeString;
         }
+
+        // Update live time in attendance section
+        const liveTimeElement = document.getElementById('live-time');
+        if (liveTimeElement) {
+            liveTimeElement.textContent = timeString;
+        }
+    }
+
+    // Time picker helper methods
+    setCurrentTimeToInput(inputId) {
+        const now = new Date();
+        const timeString = now.toTimeString().slice(0, 5); // HH:MM format
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = timeString;
+        }
+    }
+
+    initializeTimeInputs() {
+        // Set current time as default for both inputs
+        this.setCurrentTimeToInput('checkin-time-input');
+        this.setCurrentTimeToInput('checkout-time-input');
+    }
+
+    getCurrentTimeISO() {
+        return new Date().toISOString();
+    }
+
+    getTimeFromInput(inputId) {
+        const input = document.getElementById(inputId);
+        if (input && input.value) {
+            const today = new Date();
+            const [hours, minutes] = input.value.split(':');
+            today.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            return today.toISOString();
+        }
+        return this.getCurrentTimeISO();
     }
 
     updateDuration() {
@@ -300,11 +385,11 @@ class TimeXApp {
             this.durationInterval = null;
         }
         
-        // Reset UI state
-        const checkinBtn = document.getElementById('checkin-btn');
-        const checkoutBtn = document.getElementById('checkout-btn');
-        if (checkinBtn) checkinBtn.classList.add('hidden');
-        if (checkoutBtn) checkoutBtn.classList.add('hidden');
+        // Reset UI state - hide all sections
+        const checkinSection = document.getElementById('checkin-section');
+        const checkoutSection = document.getElementById('checkout-section');
+        if (checkinSection) checkinSection.classList.add('hidden');
+        if (checkoutSection) checkoutSection.classList.add('hidden');
         
         this.showAuth();
         this.showToast('خروج موفقیت‌آمیز', 'success');
@@ -337,14 +422,14 @@ class TimeXApp {
     }
 
     addRefreshStatusButton() {
-        const statusActions = document.querySelector('.status-actions');
-        if (statusActions && !document.getElementById('refresh-status-btn')) {
+        const commonActions = document.querySelector('.common-actions');
+        if (commonActions && !document.getElementById('refresh-status-btn')) {
             const refreshBtn = document.createElement('button');
             refreshBtn.id = 'refresh-status-btn';
             refreshBtn.className = 'btn btn-outline';
             refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> بروزرسانی وضعیت';
             refreshBtn.addEventListener('click', () => this.checkActiveSession());
-            statusActions.appendChild(refreshBtn);
+            commonActions.appendChild(refreshBtn);
         }
     }
 
@@ -413,15 +498,13 @@ class TimeXApp {
 
     // Attendance Methods
     async handleCheckIn() {
-        // if (!this.currentLocation) {
-        //     this.showToast('ابتدا موقعیت مکانی خود را دریافت کنید', 'warning');
-        //     return;
-        // }
-
+        // Get the time from the input field
+        const timeIn = this.getTimeFromInput('checkin-time-input');
+        
         const data = {
-            time_in: new Date().toISOString(),
-            // lat: this.currentLocation.lat,
-            // lng: this.currentLocation.lng
+            time_in: timeIn,
+            lat: this.currentLocation?.lat,
+            lng: this.currentLocation?.lng
         };
 
         this.showLoading();
@@ -442,15 +525,13 @@ class TimeXApp {
     }
 
     async handleCheckOut() {
-        // if (!this.currentLocation) {
-        //     this.showToast('ابتدا موقعیت مکانی خود را دریافت کنید', 'warning');
-        //     return;
-        // }
+        // Get the time from the input field
+        const timeOut = this.getTimeFromInput('checkout-time-input');
 
         const data = {
-            time_out: new Date().toISOString(),
-            // lat: this.currentLocation.lat,
-            // lng: this.currentLocation.lng
+            time_out: timeOut,
+            lat: this.currentLocation?.lat,
+            lng: this.currentLocation?.lng
         };
 
         this.showLoading();
@@ -528,16 +609,19 @@ class TimeXApp {
         const statusTitle = document.getElementById('status-title');
         const statusDescription = document.getElementById('status-description');
         const currentSession = document.getElementById('current-session');
-        const checkinBtn = document.getElementById('checkin-btn');
-        const checkoutBtn = document.getElementById('checkout-btn');
+        const checkinSection = document.getElementById('checkin-section');
+        const checkoutSection = document.getElementById('checkout-section');
         const checkinTimeElement = document.getElementById('checkin-time');
 
         if (isCheckedIn) {
             statusTitle.textContent = 'حضور فعال';
             statusDescription.textContent = 'شما در حال حاضر در محل کار حضور دارید';
             currentSession.classList.remove('hidden');
-            checkinBtn.classList.add('hidden');
-            checkoutBtn.classList.remove('hidden');
+            checkinSection.classList.add('hidden');
+            checkoutSection.classList.remove('hidden');
+            
+            // Set current time as default for checkout
+            this.setCurrentTimeToInput('checkout-time-input');
             
             if (this.checkInTime) {
                 const checkInDate = new Date(this.checkInTime);
@@ -547,15 +631,16 @@ class TimeXApp {
             statusTitle.textContent = 'وضعیت حضور';
             statusDescription.textContent = 'آماده برای ثبت ورود';
             currentSession.classList.add('hidden');
+            checkoutSection.classList.add('hidden');
             
-            // Only show check-in button if there's truly no active session
-            // This is the key change - we're being more restrictive
+            // Only show check-in section if there's truly no active session
             if (!this.checkInTime && !this.checkInId) {
-                checkinBtn.classList.remove('hidden');
+                checkinSection.classList.remove('hidden');
+                // Set current time as default for checkin
+                this.setCurrentTimeToInput('checkin-time-input');
             } else {
-                checkinBtn.classList.add('hidden');
+                checkinSection.classList.add('hidden');
             }
-            checkoutBtn.classList.add('hidden');
         }
     }
 
@@ -708,12 +793,14 @@ class TimeXApp {
             <div>زمان خروج</div>
             <div>مدت حضور</div>
             <div>وضعیت</div>
+            <div>عملیات</div>
         `;
         container.appendChild(header);
 
         attendance.forEach(record => {
             const recordDiv = document.createElement('div');
             recordDiv.className = 'attendance-record';
+            recordDiv.dataset.recordId = record.id;
             
             const timeIn = record.time_in ? new Date(record.time_in) : null;
             const timeOut = record.time_out ? new Date(record.time_out) : null;
@@ -726,6 +813,11 @@ class TimeXApp {
                 <div class="time-info">${timeOut ? timeOut.toLocaleTimeString('fa-IR') : 'هنوز خروج نکرده'}</div>
                 <div class="duration-info">${duration}</div>
                 <div class="status-info status-${status}">${status === 'complete' ? 'تکمیل شده' : 'فعال'}</div>
+                <div class="action-buttons">
+                    <button class="btn-delete" data-record-id="${record.id}" title="حذف رکورد">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             `;
             container.appendChild(recordDiv);
         });
@@ -749,12 +841,14 @@ class TimeXApp {
             <div>زمان ورود</div>
             <div>زمان خروج</div>
             <div>مدت حضور</div>
+            <div>عملیات</div>
         `;
         container.appendChild(header);
 
         attendance.forEach(record => {
             const recordDiv = document.createElement('div');
             recordDiv.className = 'attendance-record';
+            recordDiv.dataset.recordId = record.id;
             
             const timeIn = record.time_in ? new Date(record.time_in) : null;
             const timeOut = record.time_out ? new Date(record.time_out) : null;
@@ -766,6 +860,11 @@ class TimeXApp {
                 <div class="time-info">${timeIn ? timeIn.toLocaleTimeString('fa-IR') : 'نامشخص'}</div>
                 <div class="time-info">${timeOut ? timeOut.toLocaleTimeString('fa-IR') : 'هنوز خروج نکرده'}</div>
                 <div class="duration-info">${duration}</div>
+                <div class="action-buttons">
+                    <button class="btn-delete" data-record-id="${record.id}" title="حذف رکورد">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             `;
             container.appendChild(recordDiv);
         });
@@ -809,9 +908,33 @@ class TimeXApp {
             this.showToast('فیلتر اعمال شد', 'info');
         }
     }
+
+    async deleteAttendanceRecord(recordId) {
+        console.log('deleteAttendanceRecord called with ID:', recordId); // Debug log
+        
+        if (!confirm('آیا از حذف این رکورد حضور و غیاب اطمینان دارید؟')) {
+            return;
+        }
+
+        this.showLoading();
+        const result = await this.apiCall(`/attendance/${recordId}`, 'DELETE');
+        this.hideLoading();
+
+        if (result && result.status === 'ok') {
+            this.showToast('رکورد حضور و غیاب با موفقیت حذف شد', 'success');
+            
+            // Refresh the attendance data
+            if (this.currentUser && this.currentUser.username === 'admin') {
+                this.loadAllAttendance();
+            }
+            this.loadMyAttendance();
+        } else {
+            this.showToast(result?.message || 'خطا در حذف رکورد', 'error');
+        }
+    }
 }
 
 // Initialize the app when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new TimeXApp();
+    window.timeXApp = new TimeXApp();
 });
