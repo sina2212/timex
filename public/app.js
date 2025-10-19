@@ -322,6 +322,7 @@ class TimeXApp {
             this.showDashboard();
             this.loadUserData();
             this.showToast('با موفقیت وارد شدید', 'success');
+            this.loadMyAttendance();
         } else {
             this.showToast(result?.message || 'خطا در ورود', 'error');
         }
@@ -436,7 +437,7 @@ class TimeXApp {
         if (tabName === 'users' && this.currentUser.username === 'admin') {
             this.loadUsers();
             this.loadAllAttendance();
-        } else if (tabName === 'profile') {
+        } else if (tabName === 'attendance') {
             this.loadMyAttendance();
         }
     }
@@ -732,7 +733,7 @@ class TimeXApp {
         if (result && result.status === 'ok') {
             this.displayMyAttendance(result.attendance);
         } else {
-            this.showToast('خطا در بارگذاری سابقه حضور و غیاب', 'error');
+            this.showToast('خطا در بارگذاری سابقه ورود و خروج', 'error');
         }
     }
 
@@ -757,7 +758,7 @@ class TimeXApp {
             });
             this.displayAllAttendance(mainresult);
         } else {
-            this.showToast('خطا در بارگذاری اطلاعات حضور و غیاب', 'error');
+            this.showToast('خطا در بارگذاری اطلاعاتورود و خروج', 'error');
         }
     }
 
@@ -766,7 +767,7 @@ class TimeXApp {
         container.innerHTML = '';
 
         if (!attendance || attendance.length === 0) {
-            container.innerHTML = '<p class="text-center">سابقه حضور و غیابی یافت نشد</p>';
+            container.innerHTML = '<p class="text-center">سابقه ورود و خروجی یافت نشد</p>';
             return;
         }
 
@@ -828,7 +829,7 @@ class TimeXApp {
         container.innerHTML = '';
 
         if (!attendance || attendance.length === 0) {
-            container.innerHTML = '<p class="text-center">سابقه حضور و غیابی یافت نشد</p>';
+            container.innerHTML = '<p class="text-center">سابقه ورود و خروجی یافت نشد</p>';
             return;
         }
 
@@ -1021,9 +1022,9 @@ class TimeXApp {
         
         // Set modal title
         if (userName) {
-            modalTitle.textContent = `جزئیات حضور و غیاب - ${userName} - ${date}`;
+            modalTitle.textContent = `جزئیاتورود و خروج - ${userName} - ${date}`;
         } else {
-            modalTitle.textContent = `جزئیات حضور و غیاب - ${date}`;
+            modalTitle.textContent = `جزئیاتورود و خروج - ${date}`;
         }
         
         // Clear previous content

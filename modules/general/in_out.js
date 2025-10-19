@@ -111,7 +111,7 @@ module.exports = function (app) {
             
             const result = await inOutSchema.show_all(app);
             if (result === false) {
-                return res.json({status: 'error', message: 'خطا در دریافت اطلاعات حضور و غیاب'});
+                return res.json({status: 'error', message: 'خطا در دریافت اطلاعاتورود و خروج'});
             }
             
             return res.json({status: 'ok', attendance: result});
@@ -128,7 +128,7 @@ module.exports = function (app) {
             
             const result = await query.Select(app, 'general.attendance', ['user_id'], [userId]);
             if (result === false) {
-                return res.json({status: 'error', message: 'خطا در دریافت اطلاعات حضور و غیاب'});
+                return res.json({status: 'error', message: 'خطا در دریافت اطلاعاتورود و خروج'});
             }
             
             return res.json({status: 'ok', attendance: result.rows});
@@ -146,12 +146,12 @@ module.exports = function (app) {
             const username = req.user.user.username;
             
             if (!attendanceId || isNaN(attendanceId)) {
-                return res.json({status: 'error', message: 'شناسه حضور و غیاب نامعتبر است'});
+                return res.json({status: 'error', message: 'شناسهورود و خروج نامعتبر است'});
             }
             const attendanceRecord = await inOutSchema.select_attendance(app, {attendance_id: attendanceId});
             
             if (!attendanceRecord || attendanceRecord.length == 0) {
-                return res.json({status: 'error', message: 'رکورد حضور و غیاب یافت نشد'});
+                return res.json({status: 'error', message: 'رکوردورود و خروج یافت نشد'});
             }
             
             const record = attendanceRecord[0];
@@ -162,10 +162,10 @@ module.exports = function (app) {
             
             const result = await inOutSchema.delete_checkin(app, {attendance_id: attendanceId});
             if (result == false) {
-                return res.json({status: 'error', message: 'خطا در حذف رکورد حضور و غیاب'});
+                return res.json({status: 'error', message: 'خطا در حذف رکوردورود و خروج'});
             }
             
-            return res.json({status: 'ok', message: 'رکورد حضور و غیاب با موفقیت حذف شد'});
+            return res.json({status: 'ok', message: 'رکوردورود و خروج با موفقیت حذف شد'});
             
         } catch(err) {
             log(err);
