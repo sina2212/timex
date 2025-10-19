@@ -51,3 +51,22 @@ module.exports.get_active_checkin = async function (app, values) {
     }
 }
 
+module.exports.select_attendance = async function (app, values) {
+    try {
+        const res = await query.Select(app, 'general.attendance', ['id'], [values.attendance_id]);
+        return res.rows;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+}
+
+module.exports.delete_checkin = async function (app, values) {
+    try {
+        const res = await query.Delete(app, 'general.attendance', ['id'], [values.attendance_id]);
+        return res;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
+}

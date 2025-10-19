@@ -1061,6 +1061,7 @@ class TimeXApp {
             <div>زمان خروج</div>
             <div>مدت جلسه</div>
             <div>وضعیت</div>
+            <div>عملیات</div>
         `;
         sessionsContainer.appendChild(sessionsHeader);
         
@@ -1080,6 +1081,7 @@ class TimeXApp {
             
             const sessionRow = document.createElement('div');
             sessionRow.className = 'modal-session-row';
+            sessionRow.dataset.recordId = record.id;
             
             sessionRow.innerHTML = `
                 <div class="modal-session-number">${index + 1}</div>
@@ -1087,7 +1089,20 @@ class TimeXApp {
                 <div class="modal-time-info">${timeOut ? timeOut.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'هنوز خروج نکرده'}</div>
                 <div class="modal-duration-info">${duration}</div>
                 <div class="modal-status-info status-${sessionStatus}">${sessionStatus === 'complete' ? 'تکمیل شده' : 'فعال'}</div>
+                <div class="modal-actions">
+                    <button class="btn-delete-session" data-record-id="${record.id}" data-session-index="${index + 1}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             `;
+            
+            // Add delete button event listener
+            const deleteBtn = sessionRow.querySelector('.btn-delete-session');
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.confirmDeleteSession(record.id, index + 1, date, dayRecords, userName);
+            });
             
             sessionsContainer.appendChild(sessionRow);
         });
@@ -1104,6 +1119,91 @@ class TimeXApp {
     closeModal() {
         const modal = document.getElementById('attendance-modal');
         modal.classList.add('hidden');
+    }
+
+    async confirmDeleteSession(recordId, sessionNumber, date, dayRecords, userName = null) {
+        // Get session details for confirmation
+        const record = dayRecords.find(r => r.id === recordId);
+        const timeIn = record.time_in ? new Date(record.time_in).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'نامشخص';
+        const timeOut = record.time_out ? new Date(record.time_out).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'هنوز خروج نکرده';
+        
+        const confirmMessage = `آیا از حذف جلسه ${sessionNumber} اطمینان دارید؟\n\n` +
+                             `تاریخ: ${date}\n` +
+                             `ورود: ${timeIn}\n` +
+                             `خروج: ${timeOut}\n\n` +
+                             `⚠️ این عمل قابل بازگشت نیست!`;
+        
+        if (confirm(confirmMessage)) {
+            await this.deleteSession(recordId, date, dayRecords, userName);
+        }
+    }
+
+    async deleteSession(recordId, date, dayRecords, userName = null) {
+        // Find and disable the delete button, and add visual feedback
+        const deleteBtn = document.querySelector(`[data-record-id="${recordId}"]`);
+        const sessionRow = document.querySelector(`[data-record-id="${recordId}"]`)?.closest('.modal-session-row');
+        
+        if (deleteBtn) {
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+        
+        if (sessionRow) {
+            sessionRow.classList.add('deleting');
+        }
+        
+        this.showLoading();
+        
+        try {
+            const result = await this.apiCall(`/attendance/${recordId}`, 'DELETE');
+            
+            this.hideLoading();
+            
+            if (result && result.status === 'ok') {
+                this.showToast('جلسه با موفقیت حذف شد', 'success');
+                
+                // Remove the deleted record from dayRecords
+                const updatedDayRecords = dayRecords.filter(record => record.id !== recordId);
+                
+                if (updatedDayRecords.length === 0) {
+                    // If no sessions left for this day, close modal and refresh data
+                    this.closeModal();
+                    
+                    // Refresh the appropriate attendance view
+                    this.loadMyAttendance();
+                    if (this.currentUser.username === 'admin') {
+                        this.loadAllAttendance();
+                    }
+                } else {
+                    // Refresh the modal with updated data
+                    this.showAttendanceModal(date, updatedDayRecords, userName);
+                    
+                    // Also refresh the background data to keep tables in sync
+                    this.loadMyAttendance();
+                    if (this.currentUser.username === 'admin') {
+                        this.loadAllAttendance();
+                    }
+                }
+            } else {
+                this.showToast(result?.message || 'خطا در حذف جلسه', 'error');
+                
+                // Re-enable the delete button
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                }
+            }
+        } catch (error) {
+            this.hideLoading();
+            console.error('Delete session error:', error);
+            this.showToast('خطا در حذف جلسه', 'error');
+            
+            // Re-enable the delete button
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            }
+        }
     }
 
     filterMyAttendance() {

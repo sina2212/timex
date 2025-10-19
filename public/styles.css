@@ -1104,7 +1104,7 @@ body {
     background: #667eea;
     color: white;
     display: grid;
-    grid-template-columns: 80px 1fr 1fr 1fr 100px;
+    grid-template-columns: 80px 1fr 1fr 1fr 100px 80px;
     gap: 1rem;
     padding: 1rem;
     font-weight: 600;
@@ -1113,7 +1113,7 @@ body {
 
 .modal-session-row {
     display: grid;
-    grid-template-columns: 80px 1fr 1fr 1fr 100px;
+    grid-template-columns: 80px 1fr 1fr 1fr 100px 80px;
     gap: 1rem;
     padding: 1rem;
     border-bottom: 1px solid #e9ecef;
@@ -1126,6 +1126,56 @@ body {
 
 .modal-session-row:hover {
     background: #f8f9fa;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-delete-session {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.btn-delete-session:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-delete-session:active {
+    transform: translateY(0);
+}
+
+.btn-delete-session:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-delete-session:disabled:hover {
+    background: #6c757d;
+    transform: none;
+    box-shadow: none;
+}
+
+.modal-session-row.deleting {
+    opacity: 0.5;
+    background: #f8d7da;
+    transition: all 0.3s ease;
 }
 
 .modal-session-number {
@@ -1172,9 +1222,25 @@ body {
     
     .modal-sessions-header,
     .modal-session-row {
-        grid-template-columns: 60px 1fr 1fr 80px;
+        grid-template-columns: 50px 1fr 1fr 60px;
         gap: 0.5rem;
         padding: 0.8rem;
+        font-size: 0.8rem;
+    }
+    
+    .modal-sessions-header div:nth-child(4),
+    .modal-session-row div:nth-child(4) {
+        display: none; /* Hide duration column on mobile */
+    }
+    
+    .modal-sessions-header div:nth-child(5),
+    .modal-session-row div:nth-child(5) {
+        display: none; /* Hide status column on mobile */
+    }
+    
+    .btn-delete-session {
+        width: 30px;
+        height: 30px;
         font-size: 0.8rem;
     }
     
