@@ -143,44 +143,5 @@ module.exports = function (app) {
         }
     });
 
-    app.delete('/attendance/:id', auth, async (req, res) => {
-        try {
-            const attendanceId = req.params.id;
-            const userId = req.user.user.id;
-            const username = req.user.user.username;
-            
-            if (!attendanceId) {
-                return res.json({status: 'error', message: 'شناسه حضور و غیاب الزامی است'});
-            }
-            
-            // Check if the record exists and belongs to the user (or user is admin)
-            const existingRecord = await query.Select(app, 'general.attendance', ['id'], [attendanceId]);
-            if (!existingRecord || existingRecord.rows.length === 0) {
-                return res.json({status: 'error', message: 'رکورد حضور و غیاب یافت نشد'});
-            }
 
-            const record = existingRecord.rows[0];
-            
-            if (username !== 'admin' && record.user_id !== userId) {
-                return res.json({status: 'error', message: 'شما مجاز به حذف این رکورد نیستید'});
-            }
-
-            // Delete the attendance record
-            const result = await query.Delete(app, 'general.attendance', ['id'], [attendanceId]);
-            
-            if (result === false || result.rowCount === 0) {
-                return res.json({status: 'error', message: 'خطا در حذف رکورد حضور و غیاب'});
-            }
-
-            return res.json({
-                status: 'ok', 
-                message: 'رکورد حضور و غیاب با موفقیت حذف شد',
-                deleted_id: attendanceId
-            });
-
-        } catch(err) {
-            log(err);
-            return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});
-        }
-    });
 }
