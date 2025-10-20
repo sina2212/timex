@@ -1,13 +1,14 @@
-const { resolve } = require('path');
 const { log } = require('console');
-const userSchema = require(resolve('./db/schema/general/users'));
+const { resolve } = require('path');
+const query = require(resolve('./db/query'));
 const auth = require(resolve('./modules/base/aaa'));
+const userSchema = require(resolve('./db/schema/general/users'));
 const inOutSchema = require(resolve('./db/schema/general/in_out'));
 
 module.exports = function (app) {
     app.post('/in', auth, async (req, res) => {
         try{
-            const userId = req.user.user.id; // Fixed: Get userId from JWT token correctly
+            const userId = req.user.user.id;
             const timeIn = req.body.time_in || undefined;
             const lat = req.body.lat || undefined;
             const lng = req.body.lng || undefined;
@@ -16,14 +17,12 @@ module.exports = function (app) {
                 return res.json({status: 'error', error_code: 901, message: 'فیلد های مورد نظر را کامل کنید!'});
             }
             
-            // Validate user exists
             const id = {id: userId};
             const exist_user = await userSchema.find_by_id(app, id);
-            if (exist_user.length === 0) { // Fixed: Use comparison instead of assignment
+            if (exist_user.length === 0) {
                 return res.json({status: 'error', message: 'کاربر وجود ندارد'});
             }
             
-            // Check if user already has an active check-in (no check-out time)
             const activeCheckIn = await inOutSchema.get_active_checkin(app, {user_id: userId});
             if (activeCheckIn && activeCheckIn.length > 0) {
                 return res.json({status: 'error', message: 'شما قبلاً چک‌این کرده‌اید. ابتدا چک‌اوت کنید.'});
@@ -57,7 +56,7 @@ module.exports = function (app) {
 
     app.post('/out', auth, async (req, res) => {
         try{
-            const userId = req.user.user.id; // Fixed: Get userId from JWT token correctly
+            const userId = req.user.user.id;
             const lat = req.body.lat || undefined;
             const lng = req.body.lng || undefined;
             const timeOut = req.body.time_out || undefined;
@@ -66,7 +65,6 @@ module.exports = function (app) {
                 return res.json({status: 'error', error_code: 901, message: 'زمان خروج الزامی است!'});
             }
             
-            // Find user's active check-in record (without check-out time)
             const activeCheckIn = await inOutSchema.get_active_checkin(app, {user_id: userId});
             if (activeCheckIn.length == 0) {
                 return res.json({status: 'error', message: 'شما چک‌این فعالی ندارید. ابتدا چک‌این کنید.'});
@@ -76,7 +74,7 @@ module.exports = function (app) {
             const khorojValues = {
                 lat: lat,
                 lng: lng,
-                id: checkInRecord.id, // Use the active check-in record ID
+                id: checkInRecord.id,
                 time_out: timeOut,
             }
             
@@ -107,14 +105,13 @@ module.exports = function (app) {
         try {
             const username = req.user.user.username;
             
-            // Check if user is admin
             if (username !== 'admin') {
                 return res.json({status: 'error', message: 'دسترسی محدود - فقط ادمین'});
             }
             
             const result = await inOutSchema.show_all(app);
             if (result === false) {
-                return res.json({status: 'error', message: 'خطا در دریافت اطلاعات حضور و غیاب'});
+                return res.json({status: 'error', message: 'خطا در دریافت اطلاعاتورود و خروج'});
             }
             
             return res.json({status: 'ok', attendance: result});
@@ -129,13 +126,9 @@ module.exports = function (app) {
         try {
             const userId = req.user.user.id;
             
-            // Get user's own attendance records
-            const userSchema = require(resolve('./db/schema/general/users'));
-            const query = require(resolve('./db/query'));
-            
             const result = await query.Select(app, 'general.attendance', ['user_id'], [userId]);
             if (result === false) {
-                return res.json({status: 'error', message: 'خطا در دریافت اطلاعات حضور و غیاب'});
+                return res.json({status: 'error', message: 'خطا در دریافت اطلاعاتورود و خروج'});
             }
             
             return res.json({status: 'ok', attendance: result.rows});
@@ -145,4 +138,39 @@ module.exports = function (app) {
             return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});
         }
     });
+
+    app.delete('/attendance/:id', auth, async (req, res) => {
+        try {
+            const userId = req.user.user.id;
+            const attendanceId = req.params.id;
+            const username = req.user.user.username;
+            
+            if (!attendanceId || isNaN(attendanceId)) {
+                return res.json({status: 'error', message: 'شناسهورود و خروج نامعتبر است'});
+            }
+            const attendanceRecord = await inOutSchema.select_attendance(app, {attendance_id: attendanceId});
+            
+            if (!attendanceRecord || attendanceRecord.length == 0) {
+                return res.json({status: 'error', message: 'رکوردورود و خروج یافت نشد'});
+            }
+            
+            const record = attendanceRecord[0];
+            
+            if (record.user_id !== userId && username !== 'admin') {
+                return res.json({status: 'error', message: 'دسترسی غیرمجاز - شما فقط می‌توانید رکوردهای خود را حذف کنید'});
+            }
+            
+            const result = await inOutSchema.delete_checkin(app, {attendance_id: attendanceId});
+            if (result == false) {
+                return res.json({status: 'error', message: 'خطا در حذف رکوردورود و خروج'});
+            }
+            
+            return res.json({status: 'ok', message: 'رکوردورود و خروج با موفقیت حذف شد'});
+            
+        } catch(err) {
+            log(err);
+            return res.json({status: 'error', error_code: err["code"], message: "خطای سرور"});
+        }
+    });
+
 }

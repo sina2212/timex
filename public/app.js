@@ -63,6 +63,28 @@ class TimeXApp {
             this.handleLogout();
         });
 
+        // Modal close
+        document.getElementById('close-modal').addEventListener('click', () => {
+            this.closeModal();
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('attendance-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'attendance-modal') {
+                this.closeModal();
+            }
+        });
+
+        // Close modal with ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('attendance-modal');
+                if (!modal.classList.contains('hidden')) {
+                    this.closeModal();
+                }
+            }
+        });
+
         // Attendance
         document.getElementById('checkin-btn').addEventListener('click', () => {
             this.handleCheckIn();
@@ -76,6 +98,18 @@ class TimeXApp {
         document.getElementById('get-location-btn').addEventListener('click', () => {
             this.getCurrentLocation();
         });
+
+        // Time picker helpers
+        document.getElementById('use-current-time-in').addEventListener('click', () => {
+            this.setCurrentTimeToInput('checkin-time-input');
+        });
+
+        document.getElementById('use-current-time-out').addEventListener('click', () => {
+            this.setCurrentTimeToInput('checkout-time-input');
+        });
+
+        // Initialize time inputs with current time
+        this.initializeTimeInputs();
 
         // Profile forms
         document.getElementById('profile-form').addEventListener('submit', (e) => {
@@ -171,6 +205,43 @@ class TimeXApp {
         if (timeElement) {
             timeElement.textContent = timeString;
         }
+
+        // Update live time in attendance section
+        const liveTimeElement = document.getElementById('live-time');
+        if (liveTimeElement) {
+            liveTimeElement.textContent = timeString;
+        }
+    }
+
+    // Time picker helper methods
+    setCurrentTimeToInput(inputId) {
+        const now = new Date();
+        const timeString = now.toTimeString().slice(0, 5); // HH:MM format
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = timeString;
+        }
+    }
+
+    initializeTimeInputs() {
+        // Set current time as default for both inputs
+        this.setCurrentTimeToInput('checkin-time-input');
+        this.setCurrentTimeToInput('checkout-time-input');
+    }
+
+    getCurrentTimeISO() {
+        return new Date().toISOString();
+    }
+
+    getTimeFromInput(inputId) {
+        const input = document.getElementById(inputId);
+        if (input && input.value) {
+            const today = new Date();
+            const [hours, minutes] = input.value.split(':');
+            today.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            return today.toISOString();
+        }
+        return this.getCurrentTimeISO();
     }
 
     updateDuration() {
@@ -251,6 +322,7 @@ class TimeXApp {
             this.showDashboard();
             this.loadUserData();
             this.showToast('با موفقیت وارد شدید', 'success');
+            this.loadMyAttendance();
         } else {
             this.showToast(result?.message || 'خطا در ورود', 'error');
         }
@@ -300,11 +372,11 @@ class TimeXApp {
             this.durationInterval = null;
         }
         
-        // Reset UI state
-        const checkinBtn = document.getElementById('checkin-btn');
-        const checkoutBtn = document.getElementById('checkout-btn');
-        if (checkinBtn) checkinBtn.classList.add('hidden');
-        if (checkoutBtn) checkoutBtn.classList.add('hidden');
+        // Reset UI state - hide all sections
+        const checkinSection = document.getElementById('checkin-section');
+        const checkoutSection = document.getElementById('checkout-section');
+        if (checkinSection) checkinSection.classList.add('hidden');
+        if (checkoutSection) checkoutSection.classList.add('hidden');
         
         this.showAuth();
         this.showToast('خروج موفقیت‌آمیز', 'success');
@@ -337,14 +409,14 @@ class TimeXApp {
     }
 
     addRefreshStatusButton() {
-        const statusActions = document.querySelector('.status-actions');
-        if (statusActions && !document.getElementById('refresh-status-btn')) {
+        const commonActions = document.querySelector('.common-actions');
+        if (commonActions && !document.getElementById('refresh-status-btn')) {
             const refreshBtn = document.createElement('button');
             refreshBtn.id = 'refresh-status-btn';
             refreshBtn.className = 'btn btn-outline';
             refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> بروزرسانی وضعیت';
             refreshBtn.addEventListener('click', () => this.checkActiveSession());
-            statusActions.appendChild(refreshBtn);
+            commonActions.appendChild(refreshBtn);
         }
     }
 
@@ -365,7 +437,7 @@ class TimeXApp {
         if (tabName === 'users' && this.currentUser.username === 'admin') {
             this.loadUsers();
             this.loadAllAttendance();
-        } else if (tabName === 'profile') {
+        } else if (tabName === 'attendance') {
             this.loadMyAttendance();
         }
     }
@@ -413,15 +485,13 @@ class TimeXApp {
 
     // Attendance Methods
     async handleCheckIn() {
-        // if (!this.currentLocation) {
-        //     this.showToast('ابتدا موقعیت مکانی خود را دریافت کنید', 'warning');
-        //     return;
-        // }
-
+        // Get the time from the input field
+        const timeIn = this.getTimeFromInput('checkin-time-input');
+        
         const data = {
-            time_in: new Date().toISOString(),
-            // lat: this.currentLocation.lat,
-            // lng: this.currentLocation.lng
+            time_in: timeIn,
+            lat: this.currentLocation?.lat,
+            lng: this.currentLocation?.lng
         };
 
         this.showLoading();
@@ -442,15 +512,13 @@ class TimeXApp {
     }
 
     async handleCheckOut() {
-        // if (!this.currentLocation) {
-        //     this.showToast('ابتدا موقعیت مکانی خود را دریافت کنید', 'warning');
-        //     return;
-        // }
+        // Get the time from the input field
+        const timeOut = this.getTimeFromInput('checkout-time-input');
 
         const data = {
-            time_out: new Date().toISOString(),
-            // lat: this.currentLocation.lat,
-            // lng: this.currentLocation.lng
+            time_out: timeOut,
+            lat: this.currentLocation?.lat,
+            lng: this.currentLocation?.lng
         };
 
         this.showLoading();
@@ -528,16 +596,19 @@ class TimeXApp {
         const statusTitle = document.getElementById('status-title');
         const statusDescription = document.getElementById('status-description');
         const currentSession = document.getElementById('current-session');
-        const checkinBtn = document.getElementById('checkin-btn');
-        const checkoutBtn = document.getElementById('checkout-btn');
+        const checkinSection = document.getElementById('checkin-section');
+        const checkoutSection = document.getElementById('checkout-section');
         const checkinTimeElement = document.getElementById('checkin-time');
 
         if (isCheckedIn) {
             statusTitle.textContent = 'حضور فعال';
             statusDescription.textContent = 'شما در حال حاضر در محل کار حضور دارید';
             currentSession.classList.remove('hidden');
-            checkinBtn.classList.add('hidden');
-            checkoutBtn.classList.remove('hidden');
+            checkinSection.classList.add('hidden');
+            checkoutSection.classList.remove('hidden');
+            
+            // Set current time as default for checkout
+            this.setCurrentTimeToInput('checkout-time-input');
             
             if (this.checkInTime) {
                 const checkInDate = new Date(this.checkInTime);
@@ -547,15 +618,16 @@ class TimeXApp {
             statusTitle.textContent = 'وضعیت حضور';
             statusDescription.textContent = 'آماده برای ثبت ورود';
             currentSession.classList.add('hidden');
+            checkoutSection.classList.add('hidden');
             
-            // Only show check-in button if there's truly no active session
-            // This is the key change - we're being more restrictive
+            // Only show check-in section if there's truly no active session
             if (!this.checkInTime && !this.checkInId) {
-                checkinBtn.classList.remove('hidden');
+                checkinSection.classList.remove('hidden');
+                // Set current time as default for checkin
+                this.setCurrentTimeToInput('checkin-time-input');
             } else {
-                checkinBtn.classList.add('hidden');
+                checkinSection.classList.add('hidden');
             }
-            checkoutBtn.classList.add('hidden');
         }
     }
 
@@ -661,7 +733,7 @@ class TimeXApp {
         if (result && result.status === 'ok') {
             this.displayMyAttendance(result.attendance);
         } else {
-            this.showToast('خطا در بارگذاری سابقه حضور و غیاب', 'error');
+            this.showToast('خطا در بارگذاری سابقه ورود و خروج', 'error');
         }
     }
 
@@ -686,7 +758,7 @@ class TimeXApp {
             });
             this.displayAllAttendance(mainresult);
         } else {
-            this.showToast('خطا در بارگذاری اطلاعات حضور و غیاب', 'error');
+            this.showToast('خطا در بارگذاری اطلاعاتورود و خروج', 'error');
         }
     }
 
@@ -695,39 +767,60 @@ class TimeXApp {
         container.innerHTML = '';
 
         if (!attendance || attendance.length === 0) {
-            container.innerHTML = '<p class="text-center">سابقه حضور و غیابی یافت نشد</p>';
+            container.innerHTML = '<p class="text-center">سابقه ورود و خروجی یافت نشد</p>';
             return;
         }
+
+        // Group attendance by date
+        const groupedAttendance = this.groupAttendanceByDate(attendance);
 
         // Add header
         const header = document.createElement('div');
         header.className = 'attendance-header-row';
         header.innerHTML = `
             <div>تاریخ</div>
-            <div>زمان ورود</div>
-            <div>زمان خروج</div>
-            <div>مدت حضور</div>
+            <div>تعداد ورود/خروج</div>
+            <div>کل مدت حضور</div>
             <div>وضعیت</div>
+            <div>عملیات</div>
         `;
         container.appendChild(header);
 
-        attendance.forEach(record => {
-            const recordDiv = document.createElement('div');
-            recordDiv.className = 'attendance-record';
+        Object.keys(groupedAttendance).forEach((date, index) => {
+            const dayRecords = groupedAttendance[date];
+            const { totalDuration, status } = this.calculateDayInfo(dayRecords);
             
-            const timeIn = record.time_in ? new Date(record.time_in) : null;
-            const timeOut = record.time_out ? new Date(record.time_out) : null;
-            const duration = this.calculateDuration(timeIn, timeOut);
-            const status = timeOut ? 'complete' : 'active';
+            // Main summary row
+            const summaryRow = document.createElement('div');
+            summaryRow.className = 'attendance-record';
             
-            recordDiv.innerHTML = `
-                <div class="time-info">${timeIn ? timeIn.toLocaleDateString('fa-IR') : 'نامشخص'}</div>
-                <div class="time-info">${timeIn ? timeIn.toLocaleTimeString('fa-IR') : 'نامشخص'}</div>
-                <div class="time-info">${timeOut ? timeOut.toLocaleTimeString('fa-IR') : 'هنوز خروج نکرده'}</div>
-                <div class="duration-info">${duration}</div>
+            const sessionCount = dayRecords.length;
+            const activeCount = dayRecords.filter(r => !r.time_out).length;
+            const sessionText = activeCount > 0 ? 
+                `${sessionCount} جلسه (${activeCount} فعال)` : 
+                `${sessionCount} جلسه`;
+            
+            summaryRow.innerHTML = `
+                <div class="time-info date-cell">${date}</div>
+                <div class="time-info">${sessionText}</div>
+                <div class="duration-info">${totalDuration}</div>
                 <div class="status-info status-${status}">${status === 'complete' ? 'تکمیل شده' : 'فعال'}</div>
+                <div class="action-cell">
+                    <button class="btn btn-outline btn-sm view-details-btn" data-date="${date}">
+                        <i class="fas fa-eye"></i> مشاهده جزئیات
+                    </button>
+                </div>
             `;
-            container.appendChild(recordDiv);
+            
+            // Add click handler for view details button
+            const viewButton = summaryRow.querySelector('.view-details-btn');
+            viewButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showAttendanceModal(date, dayRecords);
+            });
+            
+            container.appendChild(summaryRow);
         });
     }
 
@@ -736,9 +829,12 @@ class TimeXApp {
         container.innerHTML = '';
 
         if (!attendance || attendance.length === 0) {
-            container.innerHTML = '<p class="text-center">سابقه حضور و غیابی یافت نشد</p>';
+            container.innerHTML = '<p class="text-center">سابقه ورود و خروجی یافت نشد</p>';
             return;
         }
+
+        // Group attendance by user and date
+        const groupedAttendance = this.groupAttendanceByUserAndDate(attendance);
 
         // Add header
         const header = document.createElement('div');
@@ -746,28 +842,50 @@ class TimeXApp {
         header.innerHTML = `
             <div>کاربر</div>
             <div>تاریخ</div>
-            <div>زمان ورود</div>
-            <div>زمان خروج</div>
-            <div>مدت حضور</div>
+            <div>تعداد ورود/خروج</div>
+            <div>کل مدت حضور</div>
+            <div>عملیات</div>
         `;
         container.appendChild(header);
 
-        attendance.forEach(record => {
-            const recordDiv = document.createElement('div');
-            recordDiv.className = 'attendance-record';
-            
-            const timeIn = record.time_in ? new Date(record.time_in) : null;
-            const timeOut = record.time_out ? new Date(record.time_out) : null;
-            const duration = this.calculateDuration(timeIn, timeOut);
-            
-            recordDiv.innerHTML = `
-                <div class="user-info">${record.full_name}</div>
-                <div class="time-info">${timeIn ? timeIn.toLocaleDateString('fa-IR') : 'نامشخص'}</div>
-                <div class="time-info">${timeIn ? timeIn.toLocaleTimeString('fa-IR') : 'نامشخص'}</div>
-                <div class="time-info">${timeOut ? timeOut.toLocaleTimeString('fa-IR') : 'هنوز خروج نکرده'}</div>
-                <div class="duration-info">${duration}</div>
-            `;
-            container.appendChild(recordDiv);
+        Object.keys(groupedAttendance).forEach(userKey => {
+            const userAttendance = groupedAttendance[userKey];
+            Object.keys(userAttendance.dates).forEach(date => {
+                const dayRecords = userAttendance.dates[date];
+                const { totalDuration } = this.calculateDayInfo(dayRecords);
+                
+                // Main summary row
+                const summaryRow = document.createElement('div');
+                summaryRow.className = 'attendance-record';
+                
+                const sessionCount = dayRecords.length;
+                const activeCount = dayRecords.filter(r => !r.time_out).length;
+                const sessionText = activeCount > 0 ? 
+                    `${sessionCount} جلسه (${activeCount} فعال)` : 
+                    `${sessionCount} جلسه`;
+                
+                summaryRow.innerHTML = `
+                    <div class="user-info">${userAttendance.fullName}</div>
+                    <div class="time-info date-cell">${date}</div>
+                    <div class="time-info">${sessionText}</div>
+                    <div class="duration-info">${totalDuration}</div>
+                    <div class="action-cell">
+                        <button class="btn btn-outline btn-sm view-details-btn" data-date="${date}" data-user="${userAttendance.fullName}">
+                            <i class="fas fa-eye"></i> مشاهده جزئیات
+                        </button>
+                    </div>
+                `;
+                
+                // Add click handler for view details button
+                const viewButton = summaryRow.querySelector('.view-details-btn');
+                viewButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.showAttendanceModal(date, dayRecords, userAttendance.fullName);
+                });
+                
+                container.appendChild(summaryRow);
+            });
         });
     }
 
@@ -783,6 +901,310 @@ class TimeXApp {
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
+    groupAttendanceByDate(attendance) {
+        const grouped = {};
+        
+        attendance.forEach(record => {
+            const timeIn = record.time_in ? new Date(record.time_in) : null;
+            const dateKey = timeIn ? timeIn.toLocaleDateString('fa-IR') : 'تاریخ نامشخص';
+            
+            if (!grouped[dateKey]) {
+                grouped[dateKey] = [];
+            }
+            grouped[dateKey].push(record);
+        });
+
+        // Sort dates (most recent first)
+        const sortedGrouped = {};
+        Object.keys(grouped).sort((a, b) => {
+            if (a === 'تاریخ نامشخص') return 1;
+            if (b === 'تاریخ نامشخص') return -1;
+            // Convert Persian dates back to compare
+            const dateA = new Date(grouped[a][0].time_in);
+            const dateB = new Date(grouped[b][0].time_in);
+            return dateB - dateA;
+        }).forEach(key => {
+            sortedGrouped[key] = grouped[key];
+        });
+
+        return sortedGrouped;
+    }
+
+    groupAttendanceByUserAndDate(attendance) {
+        const grouped = {};
+        
+        attendance.forEach(record => {
+            const userKey = `${record.user_id}_${record.full_name}`;
+            const timeIn = record.time_in ? new Date(record.time_in) : null;
+            const dateKey = timeIn ? timeIn.toLocaleDateString('fa-IR') : 'تاریخ نامشخص';
+            
+            if (!grouped[userKey]) {
+                grouped[userKey] = {
+                    fullName: record.full_name,
+                    dates: {}
+                };
+            }
+            
+            if (!grouped[userKey].dates[dateKey]) {
+                grouped[userKey].dates[dateKey] = [];
+            }
+            
+            grouped[userKey].dates[dateKey].push(record);
+        });
+
+        return grouped;
+    }
+
+    calculateDayInfo(dayRecords) {
+        const inTimes = [];
+        const outTimes = [];
+        let totalDurationMs = 0;
+        let hasActiveSession = false;
+
+        // Sort records by time_in
+        dayRecords.sort((a, b) => {
+            const timeA = a.time_in ? new Date(a.time_in) : new Date(0);
+            const timeB = b.time_in ? new Date(b.time_in) : new Date(0);
+            return timeA - timeB;
+        });
+
+        dayRecords.forEach(record => {
+            const timeIn = record.time_in ? new Date(record.time_in) : null;
+            const timeOut = record.time_out ? new Date(record.time_out) : null;
+
+            if (timeIn) {
+                inTimes.push(timeIn.toLocaleTimeString('fa-IR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }));
+            }
+
+            if (timeOut) {
+                outTimes.push(timeOut.toLocaleTimeString('fa-IR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }));
+                
+                // Calculate duration for this session
+                if (timeIn) {
+                    totalDurationMs += (timeOut - timeIn);
+                }
+            } else {
+                outTimes.push('---');
+                hasActiveSession = true;
+                
+                // Calculate duration for active session
+                if (timeIn) {
+                    totalDurationMs += (new Date() - timeIn);
+                }
+            }
+        });
+
+        // Format total duration
+        const totalHours = Math.floor(totalDurationMs / (1000 * 60 * 60));
+        const totalMinutes = Math.floor((totalDurationMs % (1000 * 60 * 60)) / (1000 * 60));
+        const totalDuration = `${totalHours.toString().padStart(2, '0')}:${totalMinutes.toString().padStart(2, '0')}`;
+
+        return {
+            inTimes: inTimes.join(', '),
+            outTimes: outTimes.join(', '),
+            totalDuration: totalDuration,
+            status: hasActiveSession ? 'active' : 'complete'
+        };
+    }
+
+    showAttendanceModal(date, dayRecords, userName = null) {
+        const modal = document.getElementById('attendance-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDetails = document.getElementById('modal-attendance-details');
+        
+        // Set modal title
+        if (userName) {
+            modalTitle.textContent = `جزئیاتورود و خروج - ${userName} - ${date}`;
+        } else {
+            modalTitle.textContent = `جزئیاتورود و خروج - ${date}`;
+        }
+        
+        // Clear previous content
+        modalDetails.innerHTML = '';
+        
+        // Calculate day summary
+        const { totalDuration, status } = this.calculateDayInfo(dayRecords);
+        const sessionCount = dayRecords.length;
+        const activeCount = dayRecords.filter(r => !r.time_out).length;
+        
+        // Add day header with summary
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'modal-day-header';
+        dayHeader.innerHTML = `
+            <h4>${date}</h4>
+            <div class="modal-day-info">
+                <div><strong>تعداد جلسات:</strong> ${sessionCount}</div>
+                <div><strong>جلسات فعال:</strong> ${activeCount}</div>
+                <div><strong>کل مدت حضور:</strong> ${totalDuration}</div>
+                <div><strong>وضعیت:</strong> ${status === 'complete' ? 'تکمیل شده' : 'فعال'}</div>
+            </div>
+        `;
+        modalDetails.appendChild(dayHeader);
+        
+        // Add sessions container
+        const sessionsContainer = document.createElement('div');
+        sessionsContainer.className = 'modal-sessions-container';
+        
+        // Add sessions header
+        const sessionsHeader = document.createElement('div');
+        sessionsHeader.className = 'modal-sessions-header';
+        sessionsHeader.innerHTML = `
+            <div>جلسه</div>
+            <div>زمان ورود</div>
+            <div>زمان خروج</div>
+            <div>مدت جلسه</div>
+            <div>وضعیت</div>
+            <div>عملیات</div>
+        `;
+        sessionsContainer.appendChild(sessionsHeader);
+        
+        // Sort records by time_in
+        dayRecords.sort((a, b) => {
+            const timeA = a.time_in ? new Date(a.time_in) : new Date(0);
+            const timeB = b.time_in ? new Date(b.time_in) : new Date(0);
+            return timeA - timeB;
+        });
+
+        // Add session rows
+        dayRecords.forEach((record, index) => {
+            const timeIn = record.time_in ? new Date(record.time_in) : null;
+            const timeOut = record.time_out ? new Date(record.time_out) : null;
+            const duration = this.calculateDuration(timeIn, timeOut);
+            const sessionStatus = timeOut ? 'complete' : 'active';
+            
+            const sessionRow = document.createElement('div');
+            sessionRow.className = 'modal-session-row';
+            sessionRow.dataset.recordId = record.id;
+            
+            sessionRow.innerHTML = `
+                <div class="modal-session-number">${index + 1}</div>
+                <div class="modal-time-info">${timeIn ? timeIn.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'نامشخص'}</div>
+                <div class="modal-time-info">${timeOut ? timeOut.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'هنوز خروج نکرده'}</div>
+                <div class="modal-duration-info">${duration}</div>
+                <div class="modal-status-info status-${sessionStatus}">${sessionStatus === 'complete' ? 'تکمیل شده' : 'فعال'}</div>
+                <div class="modal-actions">
+                    <button class="btn-delete-session" data-record-id="${record.id}" data-session-index="${index + 1}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Add delete button event listener
+            const deleteBtn = sessionRow.querySelector('.btn-delete-session');
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.confirmDeleteSession(record.id, index + 1, date, dayRecords, userName);
+            });
+            
+            sessionsContainer.appendChild(sessionRow);
+        });
+        
+        modalDetails.appendChild(sessionsContainer);
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+        // Focus on close button for accessibility
+        document.getElementById('close-modal').focus();
+    }
+
+    closeModal() {
+        const modal = document.getElementById('attendance-modal');
+        modal.classList.add('hidden');
+    }
+
+    async confirmDeleteSession(recordId, sessionNumber, date, dayRecords, userName = null) {
+        // Get session details for confirmation
+        const record = dayRecords.find(r => r.id === recordId);
+        const timeIn = record.time_in ? new Date(record.time_in).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'نامشخص';
+        const timeOut = record.time_out ? new Date(record.time_out).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'هنوز خروج نکرده';
+        
+        const confirmMessage = `آیا از حذف جلسه ${sessionNumber} اطمینان دارید؟\n\n` +
+                             `تاریخ: ${date}\n` +
+                             `ورود: ${timeIn}\n` +
+                             `خروج: ${timeOut}\n\n` +
+                             `⚠️ این عمل قابل بازگشت نیست!`;
+        
+        if (confirm(confirmMessage)) {
+            await this.deleteSession(recordId, date, dayRecords, userName);
+        }
+    }
+
+    async deleteSession(recordId, date, dayRecords, userName = null) {
+        // Find and disable the delete button, and add visual feedback
+        const deleteBtn = document.querySelector(`[data-record-id="${recordId}"]`);
+        const sessionRow = document.querySelector(`[data-record-id="${recordId}"]`)?.closest('.modal-session-row');
+        
+        if (deleteBtn) {
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+        
+        if (sessionRow) {
+            sessionRow.classList.add('deleting');
+        }
+        
+        this.showLoading();
+        
+        try {
+            const result = await this.apiCall(`/attendance/${recordId}`, 'DELETE');
+            
+            this.hideLoading();
+            
+            if (result && result.status === 'ok') {
+                this.showToast('جلسه با موفقیت حذف شد', 'success');
+                
+                // Remove the deleted record from dayRecords
+                const updatedDayRecords = dayRecords.filter(record => record.id !== recordId);
+                
+                if (updatedDayRecords.length === 0) {
+                    // If no sessions left for this day, close modal and refresh data
+                    this.closeModal();
+                    
+                    // Refresh the appropriate attendance view
+                    this.loadMyAttendance();
+                    if (this.currentUser.username === 'admin') {
+                        this.loadAllAttendance();
+                    }
+                } else {
+                    // Refresh the modal with updated data
+                    this.showAttendanceModal(date, updatedDayRecords, userName);
+                    
+                    // Also refresh the background data to keep tables in sync
+                    this.loadMyAttendance();
+                    if (this.currentUser.username === 'admin') {
+                        this.loadAllAttendance();
+                    }
+                }
+            } else {
+                this.showToast(result?.message || 'خطا در حذف جلسه', 'error');
+                
+                // Re-enable the delete button
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                }
+            }
+        } catch (error) {
+            this.hideLoading();
+            console.error('Delete session error:', error);
+            this.showToast('خطا در حذف جلسه', 'error');
+            
+            // Re-enable the delete button
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            }
+        }
     }
 
     filterMyAttendance() {
@@ -813,5 +1235,5 @@ class TimeXApp {
 
 // Initialize the app when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new TimeXApp();
+    window.timeXApp = new TimeXApp();
 });
